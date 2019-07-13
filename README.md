@@ -35,16 +35,16 @@ int main(const int argc, char *argv[])
 	harbol_string_add_cstr(&str, "and another string concatenated!");
 	harbol_string_clear(&str);
 	
-	struct HarbolVector vec = harbol_vector_create(sizeof(float));
-	harbol_vector_insert(&vec, &(float){2.f});
-	harbol_vector_insert(&vec, &(float){3.f});
-	harbol_vector_insert(&vec, &(float){4.f});
-	const float f = *(float *)harbol_vector_get(&vec, 1);
+	struct HarbolVector vec = harbol_vector_create(sizeof(float32_t));
+	harbol_vector_insert(&vec, &(float32_t){2.f});
+	harbol_vector_insert(&vec, &(float32_t){3.f});
+	harbol_vector_insert(&vec, &(float32_t){4.f});
+	const float32_t f = *(float32_t *)harbol_vector_get(&vec, 1);
 	harbol_vector_clear(&vec, NULL);
 	
-	struct HarbolMap *ptrmap = harbol_map_new(sizeof(double));
-	harbol_map_insert(ptrmap, "style", &(double){2.3553});
-	harbol_map_insert(ptrmap, "border", &(double){12.995});
+	struct HarbolMap *ptrmap = harbol_map_new(sizeof(float64_t));
+	harbol_map_insert(ptrmap, "style", &(float64_t){2.3553});
+	harbol_map_insert(ptrmap, "border", &(float64_t){12.995});
 	harbol_map_free(&ptrmap, NULL);
 }
 ```

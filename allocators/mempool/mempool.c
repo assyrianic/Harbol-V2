@@ -1,5 +1,4 @@
 #include "mempool.h"
-#include <assert.h>
 
 #ifdef OS_WINDOWS
 #	define HARBOL_LIB
@@ -19,9 +18,8 @@ HARBOL_EXPORT struct HarbolMemPool harbol_mempool_create(const size_t size)
 	if( size==0 )
 		return mempool;
 	else {
-		// align the mempool size to at least the size of an alloc node.
 		mempool.Stack.Size = size;
-		mempool.Stack.Mem = malloc(1 + mempool.Stack.Size * sizeof *mempool.Stack.Mem);
+		mempool.Stack.Mem = malloc(mempool.Stack.Size * sizeof *mempool.Stack.Mem);
 		if( mempool.Stack.Mem==NULL ) {
 			mempool.Stack.Size = 0UL;
 			return mempool;
@@ -34,7 +32,7 @@ HARBOL_EXPORT struct HarbolMemPool harbol_mempool_create(const size_t size)
 
 HARBOL_EXPORT struct HarbolMemPool harbol_mempool_from_buffer(void *const buf, const size_t size)
 {
-	struct HarbolMemPool mempool = {0};
+	struct HarbolMemPool mempool = { {NULL,NULL,0,0,false}, {NULL,NULL,0} };
 	if( size==0UL || size<=sizeof(struct HarbolMemNode) )
 		return mempool;
 	else {
@@ -119,7 +117,10 @@ HARBOL_EXPORT void *harbol_mempool_alloc(struct HarbolMemPool *const mempool, co
 		}
 		
 		uint8_t *const final_mem = (uint8_t *)new_mem + sizeof *new_mem;
+		
+#	include <assert.h>
 		assert( "final_mem is MISALIGNED" && is_aligned(final_mem, sizeof(uintptr_t)) );
+		
 		memset(final_mem, 0, new_mem->Size - sizeof *new_mem);
 		return final_mem;
 	}

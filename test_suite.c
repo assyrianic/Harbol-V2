@@ -34,7 +34,7 @@ int main()
 	fprintf(g_harbol_debug_stream, "The Harbol Test Suite is using Harbol version %s | major: %u, minor: %u, patch: %u, phase: %c\n\n", HARBOL_VERSION_STRING, HARBOL_VERSION_MAJOR, HARBOL_VERSION_MINOR, HARBOL_VERSION_PATCH, HARBOL_VERSION_PHASE);
 	
 	fprintf(g_harbol_debug_stream, "float64 == double? %u\nfloat64 == float? %u\nfloat32 == float? %u | long double size: %zu\n", sizeof(float64_t) == sizeof(double), sizeof(float64_t) == sizeof(float), sizeof(float32_t) == sizeof(float), sizeof(long double));
-	/*
+	///*
 	test_harbol_string();
 	test_harbol_vector();
 	test_harbol_unilist();
@@ -47,9 +47,9 @@ int main()
 	test_harbol_linkmap();
 	test_harbol_cfg();
 	test_harbol_plugins();
-	*/
-	//test_harbol_mempool();
-	//test_harbol_objpool();
+	//*/
+	test_harbol_mempool();
+	test_harbol_objpool();
 	test_harbol_cache();
 	fclose(g_harbol_debug_stream), g_harbol_debug_stream=NULL;
 }
@@ -1105,7 +1105,7 @@ void test_harbol_cache(void)
 	(*v)[0] = 3.;
 	(*v)[1] = 5.;
 	(*v)[2] = 10.;
-	fprintf(g_harbol_debug_stream, "remaining cache mem: '%zu'\nf value: %f\nvec values: { %f, %f, %f } | is aligned? %u\n", harbol_cache_remaining(&i), *f, (*v)[0], (*v)[1], (*v)[2], is_aligned(v, sizeof(uintptr_t)));
+	fprintf(g_harbol_debug_stream, "remaining cache mem: '%zu'\nf value: %" PRIf32 "\nvec values: { %" PRIf64 ", %" PRIf64 ", %" PRIf64 " } | is aligned? %u\n", harbol_cache_remaining(&i), *f, (*v)[0], (*v)[1], (*v)[2], is_aligned(v, sizeof(uintptr_t)));
 	
 	// free data
 	fputs("\ncache :: test destruction.\n", g_harbol_debug_stream);
@@ -1513,7 +1513,7 @@ void test_harbol_cfg(void)
 			fprintf(g_harbol_debug_stream, "root.age int?: '%" PRIiMAX "'\n", *age);
 		floatmax_t *money = harbol_cfg_get_float(larger_cfg, "root.money");
 		if( money )
-			fprintf(g_harbol_debug_stream, "root.money float?: '%Lf'\n", *money);
+			fprintf(g_harbol_debug_stream, "root.money float?: '%" PRIfMAX "'\n", *money);
 		
 		union HarbolColor *color = harbol_cfg_get_color(larger_cfg, "root.colors");
 		if( color )

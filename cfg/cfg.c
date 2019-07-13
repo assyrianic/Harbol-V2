@@ -23,6 +23,7 @@ static struct {
 	size_t count, curr_line;
 } _g_cfg_err;
 
+
 static NO_NULL void skip_single_comment(const char **strref)
 {
 	if( *strref==NULL || **strref==0 )
@@ -384,8 +385,8 @@ static bool harbol_cfg_parse_number(struct HarbolLinkMap *const restrict map, co
 		harbol_string_clear(&numstr);
 		return result;
 	} else {
-		struct HarbolVariant var = (type==HarbolCfgType_Float) ?
-			harbol_variant_create(&(floatmax_t){sizeof(floatmax_t) > sizeof(float64_t) ? strtod(numstr.CStr, NULL) : strtold(numstr.CStr, NULL)}, sizeof(floatmax_t), HarbolCfgType_Float) : harbol_variant_create(&(intmax_t){strtoll(numstr.CStr, NULL, 0)}, sizeof(intmax_t), HarbolCfgType_Int);
+		struct HarbolVariant var = ( type==HarbolCfgType_Float ) ?
+			harbol_variant_create(&(floatmax_t){strtold(numstr.CStr, NULL)}, sizeof(floatmax_t), HarbolCfgType_Float) : harbol_variant_create(&(intmax_t){strtoll(numstr.CStr, NULL, 0)}, sizeof(intmax_t), HarbolCfgType_Int);
 		harbol_string_clear(&numstr);
 		return harbol_linkmap_insert(map, key->CStr, &var);
 	}
@@ -526,7 +527,7 @@ HARBOL_EXPORT struct HarbolString harbol_cfg_to_str(const struct HarbolLinkMap *
 				harbol_string_add_format(&str, "\"%s\"\n", ((*(const struct HarbolString **)var->Data))->CStr);
 				break;
 			case HarbolCfgType_Float:
-				harbol_string_add_format(&str, sizeof(floatmax_t)==sizeof(long double) ? "%Lf\n" : "%f\n", *((const floatmax_t *)var->Data));
+				harbol_string_add_format(&str, "%" PRIfMAX "\n", *((const floatmax_t *)var->Data));
 				break;
 			case HarbolCfgType_Int:
 				harbol_string_add_format(&str, "%" PRIiMAX "\n", *((const intmax_t *)var->Data));
@@ -834,7 +835,7 @@ static NO_NULL bool __harbol_cfg_build_file(const struct HarbolLinkMap *const ma
 			case HarbolCfgType_String:
 				fprintf(file, "\"%s\"\n", (*(struct HarbolString **)v->Data)->CStr); break;
 			case HarbolCfgType_Float:
-				fprintf(file, sizeof(floatmax_t)==sizeof(long double) ? "%Lf\n" : "%f\n", *(floatmax_t *)v->Data); break;
+				fprintf(file, "%" PRIfMAX "\n", *(floatmax_t *)v->Data); break;
 			case HarbolCfgType_Int:
 				fprintf(file, "%" PRIiMAX "\n", *(intmax_t *)v->Data); break;
 			case HarbolCfgType_Bool:

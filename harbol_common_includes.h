@@ -54,58 +54,48 @@ static inline NO_NULL string_t __string_create(const char cstr[static 1], const 
 #endif
 
 #ifndef __float32_t_defined
-#	if defined(COMPILER_CLANG) || defined(COMPILER_GCC)
+#	if FLT_MANT_DIG==24
 #		define __float32_t_defined
-		typedef float float32_t TYPE_MODE(__SF__);
-#	elif FLT_MANT_DIG==24
-#		define __float32_t_defined
+#		define PRIf32 "f"
 		typedef float float32_t;
 #	elif DBL_MANT_DIG==24
 #		define __float32_t_defined
+#		define PRIf32 "f"
 		typedef double float32_t;
 #	endif
 #endif
 
 #ifndef __float64_t_defined
-#	if defined(COMPILER_CLANG) || defined(COMPILER_GCC)
+#	if FLT_MANT_DIG==53
 #		define __float64_t_defined
-		typedef float float64_t TYPE_MODE(__DF__);
-#	elif FLT_MANT_DIG==53
-#		define __float64_t_defined
+#		define PRIf64    "f"
 		typedef float float64_t;
 #	elif DBL_MANT_DIG==53
 #		define __float64_t_defined
+#		define PRIf64    "f"
 		typedef double float64_t;
 #	elif LDBL_MANT_DIG==53
 #		define __float64_t_defined
+#		define PRIf64    "Lf"
 		typedef long double float64_t;
 #	endif
 #endif
 
 #ifndef __floatmax_t_defined
-#	if defined(COMPILER_CLANG) || defined(COMPILER_GCC)
+#	if FLT_MANT_DIG>=64
 #		define __floatmax_t_defined
-		typedef double floatmax_t TYPE_MODE(__XF__);
-#	elif LDBL_MANT_DIG>=64
-#		define __floatmax_t_defined
-		typedef long double floatmax_t;
+#		define PRIfMAX    "f"
+		typedef float floatmax_t;
 #	elif DBL_MANT_DIG>=64
 #		define __floatmax_t_defined
+#		define PRIfMAX    "f"
 		typedef double floatmax_t;
 #	else
 #		define __floatmax_t_defined
-		typedef float floatmax_t;
-#	endif
+#		define PRIfMAX    "Lf"
+		typedef long double floatmax_t;
 #endif
 
-/* Saving this for future use.
-#ifndef __float128_t_defined
-#	if defined(COMPILER_CLANG) || defined(COMPILER_GCC)
-#		define __float128_t_defined
-		typedef float float128_t TYPE_MODE(__TF__);
-#	endif
-#endif
-*/
 
 static inline bool harbol_generic_vector_resizer(void *const vec, const size_t new_size, const size_t element_size)
 {
