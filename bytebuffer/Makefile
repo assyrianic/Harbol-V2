@@ -1,0 +1,12 @@
+CC = gcc
+CFLAGS = -Wall -Wextra -pedantic -std=c99 -s -O2
+TESTFLAGS = -Wall -Wextra -pedantic -std=c99 -g -O2
+
+SRCS = bytebuffer.c
+OBJS = $(SRCS:.c=.o)
+
+harbol_bytebuffer:
+	$(CC) $(CFLAGS) -c $(SRCS)
+
+clean:
+	$(RM) *.o
