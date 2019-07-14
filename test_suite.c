@@ -33,7 +33,7 @@ int main()
 	
 	fprintf(g_harbol_debug_stream, "The Harbol Test Suite is using Harbol version %s | major: %u, minor: %u, patch: %u, phase: %c\n\n", HARBOL_VERSION_STRING, HARBOL_VERSION_MAJOR, HARBOL_VERSION_MINOR, HARBOL_VERSION_PATCH, HARBOL_VERSION_PHASE);
 	
-	fprintf(g_harbol_debug_stream, "float64 == double? %u\nfloat64 == float? %u\nfloat32 == float? %u | long double size: %zu\n", sizeof(float64_t) == sizeof(double), sizeof(float64_t) == sizeof(float), sizeof(float32_t) == sizeof(float), sizeof(long double));
+	fprintf(g_harbol_debug_stream, "float64 == double? %u\nfloat64 == float? %u\nfloat32 == float? %u | long double size: %zu\nfloatmax_t == long double? %zu\nfloatmax_t == double? %zu\nfloatmax_t == float? %zu\n", sizeof(float64_t)==sizeof(double), sizeof(float64_t)==sizeof(float), sizeof(float32_t)==sizeof(float), sizeof(long double), sizeof(floatmax_t)==sizeof(long double), sizeof(floatmax_t)==sizeof(double), sizeof(floatmax_t)==sizeof(float));
 	///*
 	test_harbol_string();
 	test_harbol_vector();

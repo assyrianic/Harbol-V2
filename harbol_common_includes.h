@@ -53,47 +53,66 @@ static inline NO_NULL string_t __string_create(const char cstr[static 1], const 
 #	endif
 #endif
 
+
+/* According to C99 standards.
+ * there are three floating point types: float, double, and long double.
+ * 
+ * The type double provides at least as much precision as float, and the type long double provides at least as much precision as double.
+ * 
+ * so in summary: float <= double <= long double
+ */
+
 #ifndef __float32_t_defined
 #	if FLT_MANT_DIG==24
 #		define __float32_t_defined
 #		define PRIf32 "f"
+#		define strtof32  strtof
 		typedef float float32_t;
 #	elif DBL_MANT_DIG==24
 #		define __float32_t_defined
 #		define PRIf32 "f"
+#		define strtof32  strtod
 		typedef double float32_t;
 #	endif
 #endif
 
 #ifndef __float64_t_defined
-#	if FLT_MANT_DIG==53
+#	if DBL_MANT_DIG==53
 #		define __float64_t_defined
 #		define PRIf64    "f"
-		typedef float float64_t;
-#	elif DBL_MANT_DIG==53
-#		define __float64_t_defined
-#		define PRIf64    "f"
+#		define strtof64  strtod
 		typedef double float64_t;
 #	elif LDBL_MANT_DIG==53
 #		define __float64_t_defined
 #		define PRIf64    "Lf"
+#		define strtof64  strtold
 		typedef long double float64_t;
+// This is unlikely but check just in case.
+#	elif FLT_MANT_DIG==53
+#		define __float64_t_defined
+#		define PRIf64    "f"
+#		define strtof64  strtof
+		typedef float float64_t;
 #	endif
 #endif
 
 #ifndef __floatmax_t_defined
-#	if FLT_MANT_DIG>=64
-#		define __floatmax_t_defined
-#		define PRIfMAX    "f"
-		typedef float floatmax_t;
-#	elif DBL_MANT_DIG>=64
-#		define __floatmax_t_defined
-#		define PRIfMAX    "f"
-		typedef double floatmax_t;
-#	else
+#	if LDBL_MANT_DIG > DBL_MANT_DIG
 #		define __floatmax_t_defined
 #		define PRIfMAX    "Lf"
+#		define strtofmax  strtold
 		typedef long double floatmax_t;
+#	elif DBL_MANT_DIG==LDBL_MANT_DIG && DBL_MANT_DIG > FLT_MANT_DIG
+#		define __floatmax_t_defined
+#		define PRIfMAX    "f"
+#		define strtofmax  strtod
+		typedef double floatmax_t;
+#	elif DBL_MANT_DIG==FLT_MANT_DIG
+#		define __floatmax_t_defined
+#		define PRIfMAX    "f"
+#		define strtofmax  strtof
+		typedef float floatmax_t;
+#	endif
 #endif
 
 

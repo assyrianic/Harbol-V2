@@ -386,7 +386,7 @@ static bool harbol_cfg_parse_number(struct HarbolLinkMap *const restrict map, co
 		return result;
 	} else {
 		struct HarbolVariant var = ( type==HarbolCfgType_Float ) ?
-			harbol_variant_create(&(floatmax_t){strtold(numstr.CStr, NULL)}, sizeof(floatmax_t), HarbolCfgType_Float) : harbol_variant_create(&(intmax_t){strtoll(numstr.CStr, NULL, 0)}, sizeof(intmax_t), HarbolCfgType_Int);
+			harbol_variant_create(&(floatmax_t){strtofmax(numstr.CStr, NULL)}, sizeof(floatmax_t), HarbolCfgType_Float) : harbol_variant_create(&(intmax_t){strtoll(numstr.CStr, NULL, 0)}, sizeof(intmax_t), HarbolCfgType_Int);
 		harbol_string_clear(&numstr);
 		return harbol_linkmap_insert(map, key->CStr, &var);
 	}
