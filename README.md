@@ -9,7 +9,7 @@
 
 * Variant Type - supports any type of values and their type IDs
 * C++ style String type
-* Vector / Dyn-Array
+* Vector / Dynamic-Array
 * String-based Hash Table
 * Singly Linked List
 * Doubly Linked List
@@ -22,6 +22,8 @@
 * Ordered String-based Hash Table
 * JSON-like Key-Value Configuration File Parser - allows retrieving data from keys through python-style pathing.
 * Plugin Manager - designed to be wrapped around to provide an easy-to-setup plugin API and plugin SDK.
+* Fixed Size floating-point types.
+* 
 
 
 ## Usage

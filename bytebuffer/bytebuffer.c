@@ -92,17 +92,17 @@ HARBOL_EXPORT bool harbol_bytebuffer_insert_ptr(struct HarbolByteBuf *const buf,
 }
 
 
-HARBOL_EXPORT bool harbol_bytebuffer_insert_float32(struct HarbolByteBuf *const buf, const float val)
+HARBOL_EXPORT bool harbol_bytebuffer_insert_float32(struct HarbolByteBuf *const buf, const float32_t val)
 {
 	HARBOL_BYTEBUFFER_INSERTION
 }
 
-HARBOL_EXPORT bool harbol_bytebuffer_insert_float64(struct HarbolByteBuf *const buf, const double val)
+HARBOL_EXPORT bool harbol_bytebuffer_insert_float64(struct HarbolByteBuf *const buf, const float64_t val)
 {
 	HARBOL_BYTEBUFFER_INSERTION
 }
 
-HARBOL_EXPORT bool harbol_bytebuffer_insert_floatlong(struct HarbolByteBuf *const buf, const long double val)
+HARBOL_EXPORT bool harbol_bytebuffer_insert_floatmax(struct HarbolByteBuf *const buf, const floatmax_t val)
 {
 	HARBOL_BYTEBUFFER_INSERTION
 }

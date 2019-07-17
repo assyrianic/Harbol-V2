@@ -11,7 +11,7 @@ extern "C" {
 
 struct HarbolMemNode {
 	size_t Size;
-	struct HarbolMemNode *Next, *Prev; //*Left, *Rite;
+	struct HarbolMemNode *Next, *Prev;
 };
 
 struct HarbolMemPool {
@@ -41,7 +41,6 @@ HARBOL_EXPORT NO_NULL size_t harbol_mempool_mem_remaining(const struct HarbolMem
 HARBOL_EXPORT NO_NULL bool harbol_mempool_defrag(struct HarbolMemPool *mempool);
 HARBOL_EXPORT NO_NULL void harbol_mempool_toggle_auto_defrag(struct HarbolMemPool *mempool);
 /********************************************************************/
-
 
 #ifdef __cplusplus
 }

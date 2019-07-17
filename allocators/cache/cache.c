@@ -46,10 +46,10 @@ HARBOL_EXPORT bool harbol_cache_clear(struct HarbolCache *const cache)
 
 HARBOL_EXPORT void *harbol_cache_alloc(struct HarbolCache *const cache, const size_t size)
 {
-	if( cache->Base==NULL || size==0 || size > (uintptr_t)cache->Offs - (uintptr_t)cache->Base )
+	if( cache->Base==NULL || size==0 || size > harbol_cache_remaining(cache) )
 		return NULL;
 	else {
-		cache->Offs -= size; //harbol_align_size(size, sizeof(uintptr_t));
+		cache->Offs -= harbol_align_size(size, sizeof(uintptr_t));
 		return cache->Offs;
 	}
 }

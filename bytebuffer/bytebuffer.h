@@ -30,9 +30,9 @@ HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_insert_int32(struct HarbolByteBuf *
 HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_insert_int64(struct HarbolByteBuf *buf, uint64_t integer);
 HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_insert_ptr(struct HarbolByteBuf *buf, uintptr_t intptr);
 
-HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_insert_float32(struct HarbolByteBuf *buf, float flt);
-HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_insert_float64(struct HarbolByteBuf *buf, double dbl);
-HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_insert_floatlong(struct HarbolByteBuf *buf, long double ldbl);
+HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_insert_float32(struct HarbolByteBuf *buf, float32_t f32);
+HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_insert_float64(struct HarbolByteBuf *buf, float64_t f64);
+HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_insert_floatmax(struct HarbolByteBuf *buf, floatmax_t fmax);
 
 HARBOL_EXPORT NEVER_NULL(1) bool harbol_bytebuffer_insert_cstr(struct HarbolByteBuf *buf, const char cstr[]);
 HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_insert_obj(struct HarbolByteBuf *buf, const void *obj, size_t len);

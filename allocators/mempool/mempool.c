@@ -21,7 +21,7 @@ HARBOL_EXPORT struct HarbolMemPool harbol_mempool_create(const size_t size)
 		mempool.Stack.Size = size;
 		mempool.Stack.Mem = malloc(mempool.Stack.Size * sizeof *mempool.Stack.Mem);
 		if( mempool.Stack.Mem==NULL ) {
-			mempool.Stack.Size = 0UL;
+			mempool.Stack.Size = 0;
 			return mempool;
 		} else {
 			mempool.Stack.Base = mempool.Stack.Mem + mempool.Stack.Size;
@@ -33,7 +33,7 @@ HARBOL_EXPORT struct HarbolMemPool harbol_mempool_create(const size_t size)
 HARBOL_EXPORT struct HarbolMemPool harbol_mempool_from_buffer(void *const buf, const size_t size)
 {
 	struct HarbolMemPool mempool = { {NULL,NULL,0,0,false}, {NULL,NULL,0} };
-	if( size==0UL || size<=sizeof(struct HarbolMemNode) )
+	if( size==0 || size<=sizeof(struct HarbolMemNode) )
 		return mempool;
 	else {
 		mempool.Stack.Size = size;
@@ -85,7 +85,7 @@ static NO_NULL struct HarbolMemNode *__iterate_freelist(struct HarbolMemPool *co
 
 HARBOL_EXPORT void *harbol_mempool_alloc(struct HarbolMemPool *const mempool, const size_t size)
 {
-	if( size==0UL || size > mempool->Stack.Size )
+	if( size==0 || size > mempool->Stack.Size )
 		return NULL;
 	else {
 		// visual of the allocation block.
@@ -117,10 +117,6 @@ HARBOL_EXPORT void *harbol_mempool_alloc(struct HarbolMemPool *const mempool, co
 		}
 		
 		uint8_t *const final_mem = (uint8_t *)new_mem + sizeof *new_mem;
-		
-#	include <assert.h>
-		assert( "final_mem is MISALIGNED" && is_aligned(final_mem, sizeof(uintptr_t)) );
-		
 		memset(final_mem, 0, new_mem->Size - sizeof *new_mem);
 		return final_mem;
 	}
@@ -158,7 +154,7 @@ HARBOL_EXPORT bool harbol_mempool_free(struct HarbolMemPool *const restrict memp
 		// behind the actual pointer data is the allocation info.
 		struct HarbolMemNode *mem_node = (struct HarbolMemNode *)((uint8_t *)ptr - sizeof *mem_node);
 		// make sure the pointer data is valid.
-		if( (uintptr_t)mem_node < (uintptr_t)mempool->Stack.Base || ((uintptr_t)mem_node - (uintptr_t)mempool->Stack.Mem) > mempool->Stack.Size || mem_node->Size==0UL || mem_node->Size > mempool->Stack.Size )
+		if( (uintptr_t)mem_node < (uintptr_t)mempool->Stack.Base || ((uintptr_t)mem_node - (uintptr_t)mempool->Stack.Mem) > mempool->Stack.Size || mem_node->Size==0 || mem_node->Size > mempool->Stack.Size )
 			return false;
 		// if the mem_node is right at the Stack Base ptr, then add it to the Stack.
 		else if( (uintptr_t)mem_node==(uintptr_t)mempool->Stack.Base ) {
@@ -166,7 +162,7 @@ HARBOL_EXPORT bool harbol_mempool_free(struct HarbolMemPool *const restrict memp
 		}
 		// otherwise, we add it to the free list.
 		// We also check if the freelist already has the pointer so we can prevent double frees.
-		else if( mempool->FreeList.Len==0UL || ((uintptr_t)mempool->FreeList.Head >= (uintptr_t)mempool->Stack.Mem && (uintptr_t)mempool->FreeList.Head - (uintptr_t)mempool->Stack.Mem < mempool->Stack.Size) ) {
+		else if( mempool->FreeList.Len==0 || ((uintptr_t)mempool->FreeList.Head >= (uintptr_t)mempool->Stack.Mem && (uintptr_t)mempool->FreeList.Head - (uintptr_t)mempool->Stack.Mem < mempool->Stack.Size) ) {
 			for( struct HarbolMemNode *n = mempool->FreeList.Head; n != NULL; n = n->Next )
 				if( n==mem_node )
 					return false;
@@ -199,7 +195,7 @@ HARBOL_EXPORT bool harbol_mempool_free(struct HarbolMemPool *const restrict memp
 				mempool->FreeList.Len++;
 			}
 			
-			if( mempool->FreeList.AutoDefrag && mempool->FreeList.MaxNodes != 0UL && mempool->FreeList.Len > mempool->FreeList.MaxNodes )
+			if( mempool->FreeList.AutoDefrag && mempool->FreeList.MaxNodes != 0 && mempool->FreeList.Len > mempool->FreeList.MaxNodes )
 				harbol_mempool_defrag(mempool);
 		}
 		return true;
@@ -240,14 +236,14 @@ HARBOL_EXPORT bool harbol_mempool_defrag(struct HarbolMemPool *const mempool)
 			if( (uintptr_t)*node == (uintptr_t)mempool->Stack.Base ) {
 				// if node is right at the Stack, merge it back into the Stack.
 				mempool->Stack.Base += (*node)->Size;
-				(*node)->Size = 0UL;
+				(*node)->Size = 0;
 				__remove_node(node);
 				mempool->FreeList.Len--;
 				node = &mempool->FreeList.Head;
 			} else if( (uintptr_t)*node + (*node)->Size == (uintptr_t)(*node)->Next ) {
 				// Next node is at a higher address.
 				(*node)->Size += (*node)->Next->Size;
-				(*node)->Next->Size = 0UL;
+				(*node)->Next->Size = 0;
 				
 				// <-[P Curr N]-> <-[P Next N]-> <-[P NextNext N]->
 				// 
@@ -264,10 +260,10 @@ HARBOL_EXPORT bool harbol_mempool_defrag(struct HarbolMemPool *const mempool)
 			} else if( (uintptr_t)*node + (*node)->Size == (uintptr_t)(*node)->Prev && (*node)->Prev->Prev != NULL ) {
 				// Prev node is at a higher address.
 				(*node)->Size += (*node)->Prev->Size;
-				(*node)->Prev->Size = 0UL;
+				(*node)->Prev->Size = 0;
 				
 				// <-[P PrevPrev N]-> <-[P Prev N]-> <-[P Curr N]->
-				//
+				// 
 				//               |--------------------|
 				// <-[P PrevPrev N] <-[P Prev N]-> <-[P Curr N]->
 				(*node)->Prev->Prev->Next = *node;
@@ -281,7 +277,7 @@ HARBOL_EXPORT bool harbol_mempool_defrag(struct HarbolMemPool *const mempool)
 				// Next node is at a lower address.
 				(*node)->Next->Size += (*node)->Size;
 				
-				(*node)->Size = 0UL;
+				(*node)->Size = 0;
 				(*node)->Next->Prev = (*node)->Prev;
 				(*node)->Prev->Next = (*node)->Next;
 				
@@ -291,7 +287,7 @@ HARBOL_EXPORT bool harbol_mempool_defrag(struct HarbolMemPool *const mempool)
 				// Prev node is at a lower address.
 				(*node)->Prev->Size += (*node)->Size;
 				
-				(*node)->Size = 0UL;
+				(*node)->Size = 0;
 				(*node)->Next->Prev = (*node)->Prev;
 				(*node)->Prev->Next = (*node)->Next;
 				
