@@ -15,7 +15,7 @@
 * Doubly Linked List
 * Byte Buffer
 * Tuple type - convertible to structs, can also be packed.
-* Memory Pool - returns any size and can defrag itself.
+* Memory Pool - returns any size and has optional auto defrag.
 * Object Pool - like the memory pool but for fixed size data.
 * Weighted Graph
 * N-ary Tree
@@ -23,7 +23,6 @@
 * JSON-like Key-Value Configuration File Parser - allows retrieving data from keys through python-style pathing.
 * Plugin Manager - designed to be wrapped around to provide an easy-to-setup plugin API and plugin SDK.
 * Fixed Size floating-point types.
-* 
 
 
 ## Usage

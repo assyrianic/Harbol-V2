@@ -280,8 +280,6 @@
 
 #ifdef COMPILER_MSVC
 #	define inline __inline
-#elif !defined C90 // !defined __STDC_VERSION__ || 
-#	define inline __inline__
 #endif
 
 #endif /* HARBOL_COMMON_DEFINES_INCLUDED */

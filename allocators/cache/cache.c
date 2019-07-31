@@ -7,7 +7,7 @@
 
 HARBOL_EXPORT struct HarbolCache harbol_cache_create(const size_t size)
 {
-	struct HarbolCache cache = {NULL,NULL};
+	struct HarbolCache cache = EMPTY_HARBOL_CACHE;
 	if( size==0 )
 		return cache;
 	else {
@@ -23,7 +23,7 @@ HARBOL_EXPORT struct HarbolCache harbol_cache_create(const size_t size)
 
 HARBOL_EXPORT struct HarbolCache harbol_cache_from_buffer(void *const buf, const size_t size)
 {
-	struct HarbolCache cache = {NULL,NULL};
+	struct HarbolCache cache = EMPTY_HARBOL_CACHE;
 	if( size==0 )
 		return cache;
 	else {
@@ -38,8 +38,8 @@ HARBOL_EXPORT bool harbol_cache_clear(struct HarbolCache *const cache)
 	if( cache->Base==NULL )
 		return false;
 	else {
-		free(cache->Base), cache->Base=NULL;
-		cache->Offs = NULL;
+		free(cache->Base);
+		*cache = (struct HarbolCache)EMPTY_HARBOL_CACHE;
 		return true;
 	}
 }

@@ -25,7 +25,14 @@ struct HarbolMemPool {
 		uint8_t *Mem, *Base;
 		size_t Size;
 	} Stack;
+	
+	// hold 32 byte, 64 byte, and 128 byte sizes into a bucket.
+#	define HARBOL_BUCKET_SIZE    8
+#	define HARBOL_BUCKET_BITS    3
+	struct HarbolMemNode *Buckets[HARBOL_BUCKET_SIZE];
 };
+
+#define EMPTY_HARBOL_MEMPOOL    { {NULL,NULL,0,0,false}, {NULL,NULL,0}, {NULL} }
 
 
 HARBOL_EXPORT struct HarbolMemPool harbol_mempool_create(size_t bytes);
@@ -39,6 +46,7 @@ HARBOL_EXPORT NO_NULL bool harbol_mempool_cleanup(struct HarbolMemPool *mempool,
 
 HARBOL_EXPORT NO_NULL size_t harbol_mempool_mem_remaining(const struct HarbolMemPool *mempool);
 HARBOL_EXPORT NO_NULL bool harbol_mempool_defrag(struct HarbolMemPool *mempool);
+HARBOL_EXPORT NO_NULL void harbol_mempool_set_max_nodes(struct HarbolMemPool *mempool, size_t nodes);
 HARBOL_EXPORT NO_NULL void harbol_mempool_toggle_auto_defrag(struct HarbolMemPool *mempool);
 /********************************************************************/
 

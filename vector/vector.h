@@ -18,6 +18,8 @@ struct HarbolVector {
 	size_t Len, Count, DataSize;
 };
 
+#define EMPTY_HARBOL_VECTOR    {NULL,0,0,0}
+
 
 HARBOL_EXPORT struct HarbolVector *harbol_vector_new(size_t datasize, size_t default_size);
 HARBOL_EXPORT struct HarbolVector harbol_vector_create(size_t datasize, size_t default_size);

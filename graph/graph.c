@@ -12,7 +12,7 @@
 *****************************************************************/
 HARBOL_EXPORT struct HarbolEdge harbol_edge_create(void *const data, const size_t datasize, const index_t link)
 {
-	struct HarbolEdge edge = {NULL, 0};
+	struct HarbolEdge edge = EMPTY_HARBOL_EDGE;
 	edge.Weight = calloc(datasize, sizeof *edge.Weight);
 	if( edge.Weight != NULL ) {
 		edge.Link = link;
@@ -28,6 +28,7 @@ HARBOL_EXPORT bool harbol_edge_clear(struct HarbolEdge *const edge, void dtor(vo
 	
 	if( edge->Weight != NULL )
 		free(edge->Weight), edge->Weight=NULL;
+	edge->Link = -1;
 	return true;
 }
 
@@ -58,7 +59,7 @@ HARBOL_EXPORT bool harbol_edge_set(struct HarbolEdge *const restrict edge, void 
 *****************************************************************/
 HARBOL_EXPORT struct HarbolVertex harbol_vertex_create(void *data, size_t datasize)
 {
-	struct HarbolVertex vert = { {NULL, 0, 0, 0}, NULL };
+	struct HarbolVertex vert = EMPTY_HARBOL_VERT;
 	vert.Data = calloc(datasize, sizeof *vert.Data);
 	if( vert.Data != NULL ) {
 		vert.Edges = harbol_vector_create(sizeof(struct HarbolEdge), VEC_DEFAULT_SIZE);
@@ -141,7 +142,7 @@ HARBOL_EXPORT struct HarbolGraph *harbol_graph_new(const size_t vert_datasize, c
 
 HARBOL_EXPORT struct HarbolGraph harbol_graph_create(const size_t vert_datasize, const size_t edge_datasize)
 {
-	struct HarbolGraph g = {{NULL, 0, 0, 0}, 0, 0};
+	struct HarbolGraph g = EMPTY_HARBOL_GRAPH;
 	g.VertexDataSize = vert_datasize;
 	g.EdgeDataSize = edge_datasize;
 	g.Vertices = harbol_vector_create(sizeof(struct HarbolVertex), VEC_DEFAULT_SIZE);

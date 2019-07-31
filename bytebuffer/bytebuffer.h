@@ -14,6 +14,8 @@ struct HarbolByteBuf {
 	size_t Len, Count;
 };
 
+#define EMPTY_HARBOL_BYTEBUF    { NULL,0,0 }
+
 
 HARBOL_EXPORT struct HarbolByteBuf *harbol_bytebuffer_new(void);
 HARBOL_EXPORT struct HarbolByteBuf harbol_bytebuffer_create(void);

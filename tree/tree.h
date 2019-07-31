@@ -14,6 +14,8 @@ struct HarbolTree {
 	uint8_t *Data;
 };
 
+#define EMPTY_HARBOL_TREE    { EMPTY_HARBOL_VECTOR, NULL }
+
 HARBOL_EXPORT struct HarbolTree *harbol_tree_new(void *val, size_t datasize);
 HARBOL_EXPORT struct HarbolTree harbol_tree_create(void *val, size_t datasize);
 HARBOL_EXPORT NEVER_NULL(1) bool harbol_tree_clear(struct HarbolTree *tree, void dtor(void**));

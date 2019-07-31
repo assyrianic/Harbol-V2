@@ -14,7 +14,7 @@ HARBOL_EXPORT struct HarbolTree *harbol_tree_new(void *const restrict val, const
 
 HARBOL_EXPORT struct HarbolTree harbol_tree_create(void *const restrict val, const size_t datasize)
 {
-	struct HarbolTree tree = {{NULL, 0, 0, 0}, NULL};
+	struct HarbolTree tree = EMPTY_HARBOL_TREE;
 	tree.Data = calloc(datasize, sizeof *tree.Data);
 	if( tree.Data != NULL ) {
 		memcpy(tree.Data, val, datasize);

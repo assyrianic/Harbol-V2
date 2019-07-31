@@ -13,6 +13,8 @@ struct HarbolString {
 	size_t Len;
 };
 
+#define EMPTY_HARBOL_STRING    { NULL,0 }
+
 
 HARBOL_EXPORT struct HarbolString *harbol_string_new(const char cstr[]);
 HARBOL_EXPORT struct HarbolString harbol_string_create(const char cstr[]);

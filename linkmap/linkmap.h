@@ -15,6 +15,8 @@ struct HarbolLinkMap {
 	struct HarbolVector Vec;
 };
 
+#define EMPTY_HARBOL_LINKMAP    { EMPTY_HARBOL_VECTOR, EMPTY_HARBOL_MAP }
+
 HARBOL_EXPORT struct HarbolLinkMap *harbol_linkmap_new(size_t datasize);
 HARBOL_EXPORT struct HarbolLinkMap harbol_linkmap_create(size_t datasize);
 HARBOL_EXPORT NEVER_NULL(1) bool harbol_linkmap_clear(struct HarbolLinkMap *map, void dtor(void**));

@@ -93,8 +93,7 @@ HARBOL_EXPORT bool harbol_unilist_add_node_at_head(struct HarbolUniList *const l
 
 HARBOL_EXPORT bool harbol_unilist_add_node_at_tail(struct HarbolUniList *const list, struct HarbolUniNode *const node)
 {
-	if( list->Head != NULL ) {
-		node->Next = NULL;
+	if( list->Tail != NULL ) {
 		list->Tail->Next = node;
 		list->Tail = node;
 	}

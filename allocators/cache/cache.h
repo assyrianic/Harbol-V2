@@ -8,10 +8,12 @@
 extern "C" {
 #endif
 
-
 struct HarbolCache {
 	uint8_t *Base, *Offs;
 };
+
+#define EMPTY_HARBOL_CACHE    { NULL,NULL }
+
 
 HARBOL_EXPORT struct HarbolCache harbol_cache_create(size_t bytes);
 HARBOL_EXPORT NO_NULL struct HarbolCache harbol_cache_from_buffer(void *buf, size_t bytes);

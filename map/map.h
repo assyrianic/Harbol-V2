@@ -31,6 +31,8 @@ struct HarbolMap {
 	size_t Len, Count, DataSize;
 };
 
+#define EMPTY_HARBOL_MAP    {NULL,0,0,0}
+
 HARBOL_EXPORT struct HarbolMap *harbol_map_new(size_t datasize);
 HARBOL_EXPORT struct HarbolMap harbol_map_create(size_t datasize);
 HARBOL_EXPORT NEVER_NULL(1) bool harbol_map_clear(struct HarbolMap *map, void dtor(void**));

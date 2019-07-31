@@ -15,6 +15,9 @@ struct HarbolEdge {
 	index_t Link;
 };
 
+#define EMPTY_HARBOL_EDGE    { NULL,-1 }
+
+
 HARBOL_EXPORT NO_NULL struct HarbolEdge harbol_edge_create(void *data, size_t datasize, index_t link);
 HARBOL_EXPORT NEVER_NULL(1) bool harbol_edge_clear(struct HarbolEdge *edge, void dtor(void**));
 
@@ -26,6 +29,8 @@ struct HarbolVertex {
 	struct HarbolVector Edges;
 	uint8_t *Data;
 };
+
+#define EMPTY_HARBOL_VERT    { EMPTY_HARBOL_VECTOR, NULL }
 
 HARBOL_EXPORT NO_NULL struct HarbolVertex harbol_vertex_create(void *data, size_t datasize);
 HARBOL_EXPORT NEVER_NULL(1) bool harbol_vertex_clear(struct HarbolVertex *vert, void vert_dtor(void**), void edge_dtor(void**));
@@ -45,6 +50,8 @@ struct HarbolGraph {
 	struct HarbolVector Vertices;
 	size_t VertexDataSize, EdgeDataSize;
 };
+
+#define EMPTY_HARBOL_GRAPH    { EMPTY_HARBOL_VECTOR,0,0 }
 
 HARBOL_EXPORT struct HarbolGraph *harbol_graph_new(size_t vert_datasize, size_t edge_datasize);
 HARBOL_EXPORT struct HarbolGraph harbol_graph_create(size_t vert_datasize, size_t edge_datasize);

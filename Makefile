@@ -16,6 +16,7 @@ SRCS += map/map.c
 SRCS += allocators/mempool/mempool.c
 SRCS += allocators/objpool/objpool.c
 SRCS += allocators/cache/cache.c
+#SRCS += allocators/treepool/treepool.c
 SRCS += graph/graph.c
 SRCS += tree/tree.c
 SRCS += linkmap/linkmap.c
@@ -36,6 +37,7 @@ harbol_static:
 	+$(MAKE) -C allocators/mempool
 	+$(MAKE) -C allocators/objpool
 	+$(MAKE) -C allocators/cache
+	#+$(MAKE) -C allocators/treepool
 	+$(MAKE) -C graph
 	+$(MAKE) -C tree
 	+$(MAKE) -C linkmap
@@ -55,6 +57,7 @@ harbol_shared:
 	+$(MAKE) -C allocators/mempool
 	+$(MAKE) -C allocators/objpool
 	+$(MAKE) -C allocators/cache
+	#+$(MAKE) -C allocators/treepool
 	+$(MAKE) -C graph
 	+$(MAKE) -C tree
 	+$(MAKE) -C linkmap
@@ -77,6 +80,7 @@ clean:
 	+$(MAKE) -C allocators/mempool clean
 	+$(MAKE) -C allocators/objpool clean
 	+$(MAKE) -C allocators/cache clean
+	#+$(MAKE) -C allocators/treepool clean
 	+$(MAKE) -C graph clean
 	+$(MAKE) -C tree clean
 	+$(MAKE) -C linkmap clean

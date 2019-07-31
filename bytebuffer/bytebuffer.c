@@ -15,7 +15,7 @@ HARBOL_EXPORT struct HarbolByteBuf *harbol_bytebuffer_new(void)
 
 HARBOL_EXPORT struct HarbolByteBuf harbol_bytebuffer_create(void)
 {
-	struct HarbolByteBuf buf = {NULL, 0, 0};
+	struct HarbolByteBuf buf = EMPTY_HARBOL_BYTEBUF;
 	return buf;
 }
 
@@ -24,8 +24,8 @@ HARBOL_EXPORT bool harbol_bytebuffer_clear(struct HarbolByteBuf *const buf)
 	if( buf->Table==NULL )
 		return false;
 	else {
-		free(buf->Table), buf->Table = NULL;
-		buf->Len = buf->Count = 0;
+		free(buf->Table);
+		*buf = (struct HarbolByteBuf)EMPTY_HARBOL_BYTEBUF;
 		return true;
 	}
 }

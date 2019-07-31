@@ -33,8 +33,18 @@ int main()
 	
 	fprintf(g_harbol_debug_stream, "The Harbol Test Suite is using Harbol version %s | major: %u, minor: %u, patch: %u, phase: %c\n\n", HARBOL_VERSION_STRING, HARBOL_VERSION_MAJOR, HARBOL_VERSION_MINOR, HARBOL_VERSION_PATCH, HARBOL_VERSION_PHASE);
 	
-	fprintf(g_harbol_debug_stream, "float64 == double? %u\nfloat64 == float? %u\nfloat32 == float? %u | long double size: %zu\nfloatmax_t == long double? %zu\nfloatmax_t == double? %zu\nfloatmax_t == float? %zu\n", sizeof(float64_t)==sizeof(double), sizeof(float64_t)==sizeof(float), sizeof(float32_t)==sizeof(float), sizeof(long double), sizeof(floatmax_t)==sizeof(long double), sizeof(floatmax_t)==sizeof(double), sizeof(floatmax_t)==sizeof(float));
-	///*
+	fprintf(
+		g_harbol_debug_stream,
+		"float64 == double? %u\nfloat64_t == float? %u\nfloat32_t == float? %u | long double size: %zu\nfloatmax_t == long double? %zu\nfloatmax_t == double? %zu\nfloatmax_t == float? %zu\n\n",
+		sizeof(float64_t)==sizeof(double),
+		sizeof(float64_t)==sizeof(float),
+		sizeof(float32_t)==sizeof(float),
+		sizeof(long double),
+		sizeof(floatmax_t)==sizeof(long double),
+		sizeof(floatmax_t)==sizeof(double),
+		sizeof(floatmax_t)==sizeof(float)
+	);
+	
 	test_harbol_string();
 	test_harbol_vector();
 	test_harbol_unilist();
@@ -47,10 +57,11 @@ int main()
 	test_harbol_linkmap();
 	test_harbol_cfg();
 	test_harbol_plugins();
-	//*/
-	test_harbol_mempool();
+	
 	test_harbol_objpool();
 	test_harbol_cache();
+	test_harbol_mempool();
+	
 	fclose(g_harbol_debug_stream), g_harbol_debug_stream=NULL;
 }
 
@@ -836,6 +847,20 @@ void test_harbol_map(void)
 	fprintf(g_harbol_debug_stream, "p is null? '%s'\n", p ? "no" : "yes");
 }
 
+
+
+static void __print_mempool_nodes(const struct HarbolMemPool *const mempool)
+{
+	fputs("\nmempool :: printing mempool free bucket.\n", g_harbol_debug_stream);
+	for( uindex_t i=0; i<HARBOL_BUCKET_SIZE; i++ )
+		for( struct HarbolMemNode *n=mempool->Buckets[i]; n != NULL; n = n->Next )
+			fprintf(g_harbol_debug_stream, "mempool bucket[%zu] node :: n (%" PRIuPTR ") size == %zu.\n", i, (uintptr_t)n, n->Size);
+	
+	fputs("\nmempool :: printing mempool free list.\n", g_harbol_debug_stream);
+	for( struct HarbolMemNode *n = mempool->FreeList.Head; n != NULL; n = n->Next )
+		fprintf(g_harbol_debug_stream, "mempool list node :: n (%" PRIuPTR ") size == %zu.\n", (uintptr_t)n, n->Size);
+}
+
 void test_harbol_mempool(void)
 {
 	if( !g_harbol_debug_stream )
@@ -847,6 +872,7 @@ void test_harbol_mempool(void)
 	struct HarbolMemPool i = harbol_mempool_create(1000);
 	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_mempool_mem_remaining(&i));
 	
+	const clock_t start = clock();
 	// test giving memory
 	fputs("mempool :: test giving memory.\n", g_harbol_debug_stream);
 	fputs("\nmempool :: allocating int ptr.\n", g_harbol_debug_stream);
@@ -856,6 +882,7 @@ void test_harbol_mempool(void)
 		*p = 500;
 		fprintf(g_harbol_debug_stream, "p's value: %i\n", *p);
 	}
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_mempool_mem_remaining(&i));
 	
 	fputs("\nmempool :: allocating float ptr.\n", g_harbol_debug_stream);
 	float *f = harbol_mempool_alloc(&i, sizeof *f);
@@ -910,50 +937,86 @@ void test_harbol_mempool(void)
 			fprintf(g_harbol_debug_stream, "f[%zu] value: %f\n", i, f[i]);
 		}
 	}
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_mempool_mem_remaining(&i));
 	harbol_mempool_free(&i, p), p=NULL;
 	harbol_mempool_free(&i, f), f=NULL;
 	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_mempool_mem_remaining(&i));
-	
+	__print_mempool_nodes(&i);
+	harbol_mempool_defrag(&i);
+	__print_mempool_nodes(&i);
 	
 	// test using heap to make a unilinked list!
-	fputs("\nmempool :: test using heap for unilinked list.\n", g_harbol_debug_stream);
+	fputs("\nmempool :: test using mempool for unilist.\n", g_harbol_debug_stream);
 	struct HarbolUniList *list = harbol_mempool_alloc(&i, sizeof *list);
 	assert( list );
+	struct HarbolMemNode *b = (struct HarbolMemNode *)((uint8_t *)list - sizeof *b);
+	fprintf(g_harbol_debug_stream, "mempool :: list (%" PRIuPTR ") alloc node size: %zu, sizeof *list: %zu, b node: (%" PRIuPTR "), offset: %" PRIiPTR "; base mem: (%" PRIuPTR ")\n", (uintptr_t)list, b->Size, sizeof *list, (uintptr_t)b, (uint8_t*)b - i.Stack.Mem, (uintptr_t)i.Stack.Mem);
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_mempool_mem_remaining(&i));
+	*list = harbol_unilist_create(sizeof(union Value));
 	
 	struct HarbolUniNode *node1 = harbol_mempool_alloc(&i, sizeof *node1);
 	assert( node1 );
+	
+	b = (struct HarbolMemNode *)((uint8_t *)node1 - sizeof *b);
+	fprintf(g_harbol_debug_stream, "mempool :: node1 (%" PRIuPTR ") alloc node size: %zu, sizeof *node1: %zu, b node: (%" PRIuPTR "), offset: %" PRIiPTR "\n", (uintptr_t)node1, b->Size, sizeof *node1, (uintptr_t)b, (uint8_t*)b - i.Stack.Mem);
+	
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_mempool_mem_remaining(&i));
 	node1->Data = (uint8_t *)&(union Value){.Int64 = 1};
 	harbol_unilist_add_node_at_tail(list, node1);
 	
 	struct HarbolUniNode *node2 = harbol_mempool_alloc(&i, sizeof *node2);
 	assert( node2 );
+	b = (struct HarbolMemNode *)((uint8_t *)node2 - sizeof *b);
+	fprintf(g_harbol_debug_stream, "mempool :: node2 (%" PRIuPTR ") alloc node size: %zu, sizeof *node2: %zu, b node: (%" PRIuPTR "), offset: %" PRIiPTR "\n", (uintptr_t)node2, b->Size, sizeof *node2, (uintptr_t)b, (uint8_t*)b - i.Stack.Mem);
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_mempool_mem_remaining(&i));
 	node2->Data = (uint8_t *)&(union Value){.Int64 = 2};
 	harbol_unilist_add_node_at_tail(list, node2);
 	
 	struct HarbolUniNode *node3 = harbol_mempool_alloc(&i, sizeof *node3);
 	assert( node3 );
+	b = (struct HarbolMemNode *)((uint8_t *)node3 - sizeof *b);
+	fprintf(g_harbol_debug_stream, "mempool :: node3 (%" PRIuPTR ") alloc node size: %zu, sizeof *node3: %zu, b node: (%" PRIuPTR "), offset: %" PRIiPTR "\n", (uintptr_t)node3, b->Size, sizeof *node3, (uintptr_t)b, (uint8_t*)b - i.Stack.Mem);
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_mempool_mem_remaining(&i));
 	node3->Data = (uint8_t *)&(union Value){.Int64 = 3};
 	harbol_unilist_add_node_at_tail(list, node3);
 	
 	struct HarbolUniNode *node4 = harbol_mempool_alloc(&i, sizeof *node4);
 	assert( node4 );
+	b = (struct HarbolMemNode *)((uint8_t *)node4 - sizeof *b);
+	fprintf(g_harbol_debug_stream, "mempool :: node4 (%" PRIuPTR ") alloc node size: %zu, sizeof *node4: %zu, b node: (%" PRIuPTR "), offset: %" PRIiPTR "\n", (uintptr_t)node4, b->Size, sizeof *node4, (uintptr_t)b, (uint8_t*)b - i.Stack.Mem);
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_mempool_mem_remaining(&i));
 	node4->Data = (uint8_t *)&(union Value){.Int64 = 4};
 	harbol_unilist_add_node_at_tail(list, node4);
 	
 	struct HarbolUniNode *node5 = harbol_mempool_alloc(&i, sizeof *node5);
 	assert( node5 );
+	b = (struct HarbolMemNode *)((uint8_t *)node5 - sizeof *b);
+	fprintf(g_harbol_debug_stream, "mempool :: node5 (%" PRIuPTR ") alloc node size: %zu, sizeof *node5: %zu, b node: (%" PRIuPTR "), offset: %" PRIiPTR "\n", (uintptr_t)node5, b->Size, sizeof *node5, (uintptr_t)b, (uint8_t*)b - i.Stack.Mem);
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_mempool_mem_remaining(&i));
 	node5->Data = (uint8_t *)&(union Value){.Int64 = 5};
 	harbol_unilist_add_node_at_tail(list, node5);
+	
+	struct HarbolUniNode *node6 = harbol_mempool_alloc(&i, sizeof *node6);
+	assert( node6 );
+	b = (struct HarbolMemNode *)((uint8_t *)node6 - sizeof *b);
+	fprintf(g_harbol_debug_stream, "mempool :: node6 (%" PRIuPTR ") alloc node size: %zu, sizeof *node6: %zu, b node: (%" PRIuPTR "), offset: %" PRIiPTR "\n", (uintptr_t)node6, b->Size, sizeof *node6, (uintptr_t)b, (uint8_t*)b - i.Stack.Mem);
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_mempool_mem_remaining(&i));
+	node6->Data = (uint8_t *)&(union Value){.Int64 = 6};
+	harbol_unilist_add_node_at_tail(list, node6);
+	
+	__print_mempool_nodes(&i);
 	
 	for( struct HarbolUniNode *n=list->Head; n; n = n->Next )
 		fprintf(g_harbol_debug_stream, "uninode value : %" PRIi64 "\n", ((union Value *)n->Data)->Int64);
 	
+	harbol_mempool_free(&i, list), list=NULL;
 	harbol_mempool_free(&i, node1), node1=NULL;
 	harbol_mempool_free(&i, node2), node2=NULL;
 	harbol_mempool_free(&i, node3), node3=NULL;
 	harbol_mempool_free(&i, node4), node4=NULL;
 	harbol_mempool_free(&i, node5), node5=NULL;
-	harbol_mempool_free(&i, list), list=NULL;
+	harbol_mempool_free(&i, node6), node6=NULL;
+	__print_mempool_nodes(&i);
 	
 	// test "double freeing"
 	fputs("\nmempool :: test double freeing.\n", g_harbol_debug_stream);
@@ -968,8 +1031,7 @@ void test_harbol_mempool(void)
 	harbol_mempool_cleanup(&i, (void**)&p);
 	
 	fprintf(g_harbol_debug_stream, "\nmempool :: pool size == %zu.\n", harbol_mempool_mem_remaining(&i));
-	for( struct HarbolMemNode *n = i.FreeList.Head; n; n = n->Next )
-		fprintf(g_harbol_debug_stream, "mempool :: n (%" PRIuPTR ") size == %zu.\n", (uintptr_t)n, n->Size);
+	__print_mempool_nodes(&i);
 	
 	float *hk = harbol_mempool_alloc(&i, sizeof *hk * 99);
 	double *fg = harbol_mempool_alloc(&i, sizeof *fg * 10);
@@ -982,21 +1044,25 @@ void test_harbol_mempool(void)
 	harbol_mempool_free(&i, ac);
 	harbol_mempool_free(&i, f32);
 	fprintf(g_harbol_debug_stream, "\nmempool :: pool size == %zu.\n", harbol_mempool_mem_remaining(&i));
-	for( struct HarbolMemNode *n = i.FreeList.Head; n; n = n->Next )
-		fprintf(g_harbol_debug_stream, "mempool :: n (%" PRIuPTR ") size == %zu.\n", (uintptr_t)n, n->Size);
+	__print_mempool_nodes(&i);
 	fprintf(g_harbol_debug_stream, "mempool :: heap bottom (%zu).\n", (uintptr_t)i.Stack.Base);
 	
 	harbol_mempool_free(&i, hk);
 	fprintf(g_harbol_debug_stream, "\ncrazy mempool :: pool size == %zu.\n", harbol_mempool_mem_remaining(&i));
-	for( struct HarbolMemNode *n = i.FreeList.Head; n; n = n->Next )
-		fprintf(g_harbol_debug_stream, "crazy mempool :: n (%" PRIuPTR ") size == %zu.\n", (uintptr_t)n, n->Size);
+	__print_mempool_nodes(&i);
 		
 	harbol_mempool_free(&i, jj);
 	
 	fprintf(g_harbol_debug_stream, "\nlast mempool :: pool size == %zu.\n", harbol_mempool_mem_remaining(&i));
-	for( struct HarbolMemNode *n = i.FreeList.Head; n; n = n->Next )
-		fprintf(g_harbol_debug_stream, "last mempool :: n (%" PRIuPTR ") size == %zu.\n", (uintptr_t)n, n->Size);
+	__print_mempool_nodes(&i);
 	//fprintf(g_harbol_debug_stream, "mempool :: heap bottom (%zu).\n", (uintptr_t)i.Stack.Base);
+	
+	
+	fprintf(g_harbol_debug_stream, "\nmempool :: pool size == %zu.\n", harbol_mempool_mem_remaining(&i));
+	__print_mempool_nodes(&i);
+	harbol_mempool_defrag(&i);
+	fputs("\n", g_harbol_debug_stream);
+	__print_mempool_nodes(&i);
 	
 	fputs("\nmempool :: test reallocating jj to a single value.\n", g_harbol_debug_stream);
 	jj = harbol_mempool_alloc(&i, sizeof *jj);
@@ -1023,6 +1089,8 @@ void test_harbol_mempool(void)
 		fprintf(g_harbol_debug_stream, "mempool :: reallocated newer[%zu] == %i.\n", i, newer[i]);
 	harbol_mempool_free(&i, newer);
 	
+	const clock_t end = clock();
+	printf("memory pool run time: %f\n", (end-start)/(double)CLOCKS_PER_SEC);
 	// free data
 	fputs("\nmempool :: test destruction.\n", g_harbol_debug_stream);
 	harbol_mempool_clear(&i);
@@ -1618,3 +1686,181 @@ void test_harbol_plugins(void)
 	fputs("\nplugin mod :: test destruction.\n", g_harbol_debug_stream);
 	harbol_plugin_mod_clear(&pm, on_plugin_unload);
 }
+
+/*
+static void __print_tabs(const size_t t)
+{
+	for( size_t i=0; i<t; i++ )
+		fprintf(g_harbol_debug_stream, "\t");
+}
+*/
+/*
+static void __print_rbtree(const struct HarbolMemChild *const n, const size_t t)
+{
+	if( n==NULL ) {
+		fputs("node is NULL\n", g_harbol_debug_stream);
+		return;
+	} else {
+		__print_tabs(t);
+		fprintf(g_harbol_debug_stream, "n (%" PRIuPTR ") | Size == %zu\n", (uintptr_t)n, n->Size);
+		if( n->Link[Left] != NULL ) {
+			__print_tabs(t+1);
+			fputs("Left:\n", g_harbol_debug_stream);
+			__print_rbtree(n->Link[Left], t+2);
+		}
+		
+		if( n->Link[Rite] != NULL ) {
+			__print_tabs(t+1);
+			fputs("Right:\n", g_harbol_debug_stream);
+			__print_rbtree(n->Link[Rite], t+2);
+		}
+	}
+}
+
+static void __print_rbll(const struct HarbolMemChild *const n)
+{
+	if( n==NULL )
+		fputs("__print_rbll :: node is NULL\n", g_harbol_debug_stream);
+	else {
+		fputs("\nPrinting Red-Black Linked List:\n", g_harbol_debug_stream);
+		for( const struct HarbolMemChild *i=n; i != NULL; i = i->Link[Next] )
+			fprintf(g_harbol_debug_stream, "i (%" PRIuPTR ") | Size == %zu\n", (uintptr_t)i, i->Size);
+	}
+}
+
+void test_harbol_treepool(void)
+{
+	if( !g_harbol_debug_stream )
+		return;
+	fputs("treepool :: test init.\n", g_harbol_debug_stream);
+	struct HarbolTreePool i = harbol_treepool_create(1000);
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_treepool_mem_remaining(&i));
+	
+	// test giving memory
+	fputs("treepool :: test giving memory.\n", g_harbol_debug_stream);
+	fputs("\ntreepool :: allocating int ptr.\n", g_harbol_debug_stream);
+	int *p = harbol_treepool_alloc(&i, sizeof *p);
+	fprintf(g_harbol_debug_stream, "p is null? '%s'\n", p ? "no" : "yes");
+	if( p ) {
+		*p = 500;
+		fprintf(g_harbol_debug_stream, "p's value: %i\n", *p);
+	}
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_treepool_mem_remaining(&i));
+	fprintf(g_harbol_debug_stream, "nodes in freetree : %zu\n", i.FreeTree.Len);
+	fputs("\nPrinting Red-Black Tree:\n", g_harbol_debug_stream);
+	__print_rbtree(i.FreeTree.Root, 0);
+	__print_rbll(i.FreeTree.Root);
+	
+	
+	fputs("\ntreepool :: allocating float ptr.\n", g_harbol_debug_stream);
+	float *f = harbol_treepool_alloc(&i, sizeof *f);
+	fprintf(g_harbol_debug_stream, "f is null? '%s'\n", f ? "no" : "yes");
+	if( f ) {
+		*f = 500.5f;
+		fprintf(g_harbol_debug_stream, "f's value: %f\n", *f);
+	}
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_treepool_mem_remaining(&i));
+	fprintf(g_harbol_debug_stream, "nodes in freetree : %zu\n", i.FreeTree.Len);
+	fputs("\nPrinting Red-Black Tree:\n", g_harbol_debug_stream);
+	__print_rbtree(i.FreeTree.Root, 0);
+	__print_rbll(i.FreeTree.Root);
+	
+	// test releasing memory
+	fputs("\ntreepool :: test releasing memory.\n", g_harbol_debug_stream);
+	harbol_treepool_free(&i, p);
+	harbol_treepool_free(&i, p), p=NULL;
+	
+	fprintf(g_harbol_debug_stream, "nodes in freetree : %zu\n", i.FreeTree.Len);
+	fputs("\nPrinting Red-Black Tree:\n", g_harbol_debug_stream);
+	__print_rbtree(i.FreeTree.Root, 0);
+	__print_rbll(i.FreeTree.Root);
+	//char *c = harbol_treepool_alloc(&i, sizeof *c * 3);
+	
+	harbol_treepool_free(&i, f);
+	
+	harbol_treepool_free(&i, f), f=NULL;
+	//harbol_treepool_free(&i, c), c=NULL;
+	
+	fprintf(g_harbol_debug_stream, "nodes in freetree : %zu\n", i.FreeTree.Len);
+	fputs("\nPrinting Red-Black Tree:\n", g_harbol_debug_stream);
+	__print_rbtree(i.FreeTree.Root, 0);
+	__print_rbll(i.FreeTree.Root);
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_treepool_mem_remaining(&i));
+	
+	// test random allocs
+	fputs("\ntreepool :: test random allocs.\n", g_harbol_debug_stream);
+	double *fg = harbol_treepool_alloc(&i, sizeof *fg * 10);
+	char *fff = harbol_treepool_alloc(&i, sizeof *fff * 50);
+	float *f32 = harbol_treepool_alloc(&i, sizeof *f32 * 23);
+	char *jj = harbol_treepool_alloc(&i, sizeof *jj * 100);
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_treepool_mem_remaining(&i));
+	
+	struct HarbolMemNode *ac = harbol_treepool_alloc(&i, sizeof *ac * 31);
+	harbol_treepool_free(&i, fff);
+	harbol_treepool_free(&i, fg);
+	harbol_treepool_free(&i, ac);
+	harbol_treepool_free(&i, f32);
+	harbol_treepool_free(&i, jj);
+	fprintf(g_harbol_debug_stream, "nodes in freetree : %zu\n", i.FreeTree.Len);
+	fputs("\nPrinting Red-Black Tree:\n", g_harbol_debug_stream);
+	__print_rbtree(i.FreeTree.Root, 0);
+	__print_rbll(i.FreeTree.Root);
+	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_treepool_mem_remaining(&i));
+	
+	// test using heap to make a unilinked list!
+	fputs("\ntreepool :: test using heap for unilinked list.\n", g_harbol_debug_stream);
+	struct HarbolUniList *list = harbol_treepool_alloc(&i, sizeof *list);
+	assert( list != NULL );
+	
+	struct HarbolUniNode *node1 = harbol_treepool_alloc(&i, sizeof *node1);
+	assert( node1 != NULL );
+	node1->Data = (uint8_t *)&(union Value){.Int64 = 1};
+	harbol_unilist_add_node_at_tail(list, node1);
+	
+	struct HarbolUniNode *node2 = harbol_treepool_alloc(&i, sizeof *node2);
+	assert( node2 != NULL );
+	node2->Data = (uint8_t *)&(union Value){.Int64 = 2};
+	harbol_unilist_add_node_at_tail(list, node2);
+	
+	struct HarbolUniNode *node3 = harbol_treepool_alloc(&i, sizeof *node3);
+	assert( node3 != NULL );
+	node3->Data = (uint8_t *)&(union Value){.Int64 = 3};
+	harbol_unilist_add_node_at_tail(list, node3);
+	
+	struct HarbolUniNode *node4 = harbol_treepool_alloc(&i, sizeof *node4);
+	assert( node4 != NULL );
+	node4->Data = (uint8_t *)&(union Value){.Int64 = 4};
+	harbol_unilist_add_node_at_tail(list, node4);
+	
+	struct HarbolUniNode *node5 = harbol_treepool_alloc(&i, sizeof *node5);
+	assert( node5 != NULL );
+	node5->Data = (uint8_t *)&(union Value){.Int64 = 5};
+	harbol_unilist_add_node_at_tail(list, node5);
+	
+	for( struct HarbolUniNode *n=list->Head; n != NULL; n = n->Next )
+		fprintf(g_harbol_debug_stream, "uninode value : %" PRIi64 "\n", ((union Value *)n->Data)->Int64);
+	
+	harbol_treepool_free(&i, node1), node1=NULL;
+	harbol_treepool_free(&i, list), list=NULL;
+	harbol_treepool_free(&i, node2), node2=NULL;
+	harbol_treepool_free(&i, node4), node4=NULL;
+	harbol_treepool_free(&i, node5), node5=NULL;
+	
+	fprintf(g_harbol_debug_stream, "\npre-defrag nodes in freetree : %zu\n", i.FreeTree.Len);
+	fputs("\nPrinting Red-Black Tree:\n", g_harbol_debug_stream);
+	__print_rbtree(i.FreeTree.Root, 0);
+	__print_rbll(i.FreeTree.Root);
+	
+	harbol_treepool_defrag(&i);
+	
+	fprintf(g_harbol_debug_stream, "\npost-defrag nodes in freetree : %zu\n", i.FreeTree.Len);
+	fputs("\nPrinting Red-Black Tree:\n", g_harbol_debug_stream);
+	__print_rbtree(i.FreeTree.Root, 0);
+	__print_rbll(i.FreeTree.Root);
+	
+	harbol_treepool_free(&i, node3), node3=NULL;
+	
+	fputs("\ntreepool :: test destruction.\n", g_harbol_debug_stream);
+	harbol_treepool_clear(&i);
+}
+*/

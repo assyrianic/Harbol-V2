@@ -1,8 +1,8 @@
 #ifndef HARBOL_INCLUDED
 #	define HARBOL_INCLUDED
 #	define HARBOL_VERSION_MAJOR    2
-#	define HARBOL_VERSION_MINOR    0
-#	define HARBOL_VERSION_PATCH    5
+#	define HARBOL_VERSION_MINOR    1
+#	define HARBOL_VERSION_PATCH    8
 #	define HARBOL_VERSION_PHASE    'B'
 #	define STR_HELPER(x)    #x
 #	define STR(x)    STR_HELPER(x)
@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 
-/************* General-Purpose Memory Pool *************/
+/************* General-Purpose Free List-based Memory Pool *************/
 #include "allocators/mempool/mempool.h"
 /*******************************************************/
 

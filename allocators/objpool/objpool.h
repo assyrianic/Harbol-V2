@@ -21,6 +21,8 @@ struct HarbolObjPool {
 	;
 };
 
+#define EMPTY_HARBOL_OBJPOOL    { NULL,NULL,0,0,0 }
+
 HARBOL_EXPORT struct HarbolObjPool harbol_objpool_create(size_t objsize, size_t len);
 HARBOL_EXPORT NO_NULL struct HarbolObjPool harbol_objpool_from_buffer(void *buf, size_t objsize, size_t len);
 HARBOL_EXPORT NO_NULL bool harbol_objpool_clear(struct HarbolObjPool *objpool);

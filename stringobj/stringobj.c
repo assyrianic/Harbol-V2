@@ -48,7 +48,7 @@ HARBOL_EXPORT struct HarbolString *harbol_string_new(const char cstr[restrict])
 
 HARBOL_EXPORT struct HarbolString harbol_string_create(const char cstr[restrict])
 {
-	struct HarbolString string = {NULL, 0};
+	struct HarbolString string = EMPTY_HARBOL_STRING;
 	harbol_string_copy_cstr(&string, cstr);
 	return string;
 }
@@ -57,7 +57,7 @@ HARBOL_EXPORT bool harbol_string_clear(struct HarbolString *const string)
 {
 	if( string->CStr != NULL )
 		free(string->CStr), string->CStr=NULL;
-	*string = (struct HarbolString){NULL, 0};
+	*string = (struct HarbolString)EMPTY_HARBOL_STRING;
 	return true;
 }
 

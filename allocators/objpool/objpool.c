@@ -6,13 +6,13 @@
 
 typedef union {
 	uint8_t *const byte;
-	size_t *const next_index;
+	size_t *const index;
 } ObjInfo_t;
 
 
 HARBOL_EXPORT struct HarbolObjPool harbol_objpool_create(const size_t objsize, const size_t len)
 {
-	struct HarbolObjPool objpool = {NULL,NULL,0,0,0};
+	struct HarbolObjPool objpool = EMPTY_HARBOL_OBJPOOL;
 	if( len==0UL || objsize==0UL )
 		return objpool;
 	else {
@@ -25,7 +25,7 @@ HARBOL_EXPORT struct HarbolObjPool harbol_objpool_create(const size_t objsize, c
 		} else {
 			for( uindex_t i=0; i<objpool.FreeBlocks; i++ ) {
 				ObjInfo_t block = { .byte = &objpool.Mem[i * objpool.ObjSize] };
-				*block.next_index = i + 1;
+				*block.index = i + 1;
 			}
 			objpool.Next = objpool.Mem;
 			return objpool;
@@ -35,9 +35,9 @@ HARBOL_EXPORT struct HarbolObjPool harbol_objpool_create(const size_t objsize, c
 
 HARBOL_EXPORT struct HarbolObjPool harbol_objpool_from_buffer(void *const buf, const size_t objsize, const size_t len)
 {
-	struct HarbolObjPool objpool = {NULL,NULL,0,0,0};
+	struct HarbolObjPool objpool = EMPTY_HARBOL_OBJPOOL;
 	
-	// If the object next_index isn't large enough to align to a size_t, then we can't use it.
+	// If the object index isn't large enough to align to a size_t, then we can't use it.
 	if( len==0UL || objsize<sizeof(size_t) || objsize * len != harbol_align_size(objsize, sizeof(size_t)) * len )
 		return objpool;
 	else {
@@ -46,7 +46,7 @@ HARBOL_EXPORT struct HarbolObjPool harbol_objpool_from_buffer(void *const buf, c
 		objpool.Mem = buf;
 		for( uindex_t i=0; i<objpool.FreeBlocks; i++ ) {
 			ObjInfo_t block = { .byte = &objpool.Mem[i * objpool.ObjSize] };
-			*block.next_index = i + 1;
+			*block.index = i + 1;
 		}
 		objpool.Next = objpool.Mem;
 		return objpool;
@@ -59,7 +59,7 @@ HARBOL_EXPORT bool harbol_objpool_clear(struct HarbolObjPool *const objpool)
 		return false;
 	else {
 		free(objpool->Mem);
-		*objpool = (struct HarbolObjPool){NULL,NULL,0,0,0};
+		*objpool = (struct HarbolObjPool)EMPTY_HARBOL_OBJPOOL;
 		return true;
 	}
 }
@@ -75,7 +75,7 @@ HARBOL_EXPORT void *harbol_objpool_alloc(struct HarbolObjPool *const objpool)
 		
 		// after allocating, we set head to the address of the index that *Next holds.
 		// Next = &pool[*Next * pool.objsize];
-		objpool->Next = ( objpool->FreeBlocks != 0UL ) ? objpool->Mem + (*ret.next_index * objpool->ObjSize) : NULL;
+		objpool->Next = ( objpool->FreeBlocks != 0UL ) ? objpool->Mem + (*ret.index * objpool->ObjSize) : NULL;
 		memset(ret.byte, 0, objpool->ObjSize);
 		return ret.byte;
 	}
@@ -93,7 +93,7 @@ HARBOL_EXPORT bool harbol_objpool_free(struct HarbolObjPool *const restrict objp
 		
 		// *p = index of Next in relation to the buffer;
 		// Next = p;
-		*p.next_index = ( objpool->Next != NULL ) ? (objpool->Next - objpool->Mem) / objpool->ObjSize : objpool->Size;
+		*p.index = ( objpool->Next != NULL ) ? (objpool->Next - objpool->Mem) / objpool->ObjSize : objpool->Size;
 		objpool->Next = p.byte;
 		++objpool->FreeBlocks;
 		return true;

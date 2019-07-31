@@ -19,7 +19,7 @@ enum HarbolType {
 	
 	HarbolType_Int64, HarbolType_UInt64, HarbolType_Float64,
 	
-	HarbolType_Float128,
+	HarbolType_FloatMax,
 	
 	HarbolType_IntPtr, HarbolType_UIntPtr, HarbolType_Size,
 	

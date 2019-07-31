@@ -42,14 +42,9 @@ typedef intptr_t ssize_t;
 
 #ifndef __string_t_defined
 #	define __string_t_defined
-typedef struct { const char *CStr; const size_t Len; } string_t;
-static inline NO_NULL string_t __string_create(const char cstr[static 1], const size_t len)
-{
-	return (string_t){ cstr, len };
-}
+typedef struct { const char *cstr; const size_t len; } string_t;
 #	ifndef string_create
-#	define string_create(cstr_literal) \
-			__string_create((cstr_literal), sizeof(cstr_literal) - 1)
+#		define string_create(cstr_literal)    (string_t){(cstr_literal), sizeof(cstr_literal) - 1}
 #	endif
 #endif
 
@@ -244,7 +239,7 @@ static inline NO_NULL uint8_t *make_buffer_from_binary(const char file_name[rest
 		return NULL;
 	else {
 		const ssize_t filesize = get_file_size(file);
-		if( filesize <= -1 ) {
+		if( filesize<=0 ) {
 			fclose(file);
 			return NULL;
 		} else {
@@ -263,17 +258,17 @@ static inline NO_NULL uint8_t *make_buffer_from_binary(const char file_name[rest
 
 static inline bool is_decimal(const int c)
 {
-	return( c >= '0' && c <= '9' );
+	return( c>='0' && c<='9' );
 }
 
 static inline bool is_octal(const int c)
 {
-	return( c >= '0' && c <= '7' );
+	return( c>='0' && c<='7' );
 }
 
 static inline bool is_hex(const int c)
 {
-	return( (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || is_decimal(c) );
+	return( (c>='a' && c<='f') || (c>='A' && c<='F') || is_decimal(c) );
 }
 
 static inline bool is_whitespace(const int c)
