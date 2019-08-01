@@ -1,27 +1,25 @@
 #ifndef HARBOL_INCLUDED
 #	define HARBOL_INCLUDED
 #	define HARBOL_VERSION_MAJOR    2
-#	define HARBOL_VERSION_MINOR    1
-#	define HARBOL_VERSION_PATCH    8
+#	define HARBOL_VERSION_MINOR    2
+#	define HARBOL_VERSION_PATCH    0
 #	define HARBOL_VERSION_PHASE    'B'
 #	define STR_HELPER(x)    #x
 #	define STR(x)    STR_HELPER(x)
 #	define HARBOL_VERSION_STRING \
 			STR(HARBOL_VERSION_MAJOR) "." STR(HARBOL_VERSION_MINOR) "." STR(HARBOL_VERSION_PATCH) " " STR(HARBOL_VERSION_PHASE)
 
-#include "harbol_common_defines.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+#include "harbol_common_defines.h"
 
 #ifndef C99
 #	error "Harbol requires a C99 compliant compiler with at least stdbool.h, inttypes.h, compound literals, and designated initializers."
 #endif
 
 #include "harbol_common_includes.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 /************* General-Purpose Free List-based Memory Pool *************/
 #include "allocators/mempool/mempool.h"
@@ -85,6 +83,10 @@ extern "C" {
 
 /************* Shared Library Plugin Manager *************/
 #include "plugins/plugins.h"
+/*********************************************************/
+
+/************* Vector-based Double Ended Queue *************/
+#include "veque/veque.h"
 /*********************************************************/
 
 #ifdef __cplusplus

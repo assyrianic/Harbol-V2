@@ -1,12 +1,12 @@
 #ifndef HARBOL_UNILIST_INCLUDED
 #	define HARBOL_UNILIST_INCLUDED
 
-#include "../harbol_common_defines.h"
-#include "../harbol_common_includes.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "../harbol_common_defines.h"
+#include "../harbol_common_includes.h"
 
 struct HarbolUniNode {
 	uint8_t *Data;

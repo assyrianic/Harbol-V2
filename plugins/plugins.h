@@ -1,14 +1,14 @@
 #ifndef HARBOL_PLUGINS_INCLUDED
 #	define HARBOL_PLUGINS_INCLUDED
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "../harbol_common_defines.h"
 #include "../harbol_common_includes.h"
 #include "../linkmap/linkmap.h"
 #include "tinydir.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 
 #ifdef OS_WINDOWS

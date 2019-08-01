@@ -8,5 +8,8 @@ OBJS = $(SRCS:.c=.o)
 harbol_tree:
 	$(CC) $(CFLAGS) -c $(SRCS)
 
+debug:
+	$(CC) $(TESTFLAGS) -c $(SRCS)
+
 clean:
 	$(RM) *.o

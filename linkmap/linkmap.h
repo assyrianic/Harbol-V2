@@ -1,13 +1,13 @@
 #ifndef HARBOL_LINKMAP_INCLUDED
 #	define HARBOL_LINKMAP_INCLUDED
 
-#include "../harbol_common_defines.h"
-#include "../harbol_common_includes.h"
-#include "../map/map.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "../harbol_common_defines.h"
+#include "../harbol_common_includes.h"
+#include "../map/map.h"
 
 
 struct HarbolLinkMap {

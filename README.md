@@ -23,6 +23,7 @@
 * JSON-like Key-Value Configuration File Parser - allows retrieving data from keys through python-style pathing.
 * Plugin Manager - designed to be wrapped around to provide an easy-to-setup plugin API and plugin SDK.
 * Fixed Size floating-point types.
+* Vector-based Double Ended Queue (Veque!).
 
 
 ## Usage
@@ -68,11 +69,15 @@ C99 compliant compiler and libc implementation with stdlib.h, stdio.h, and stdde
 ### Installation
 
 To build the library, simply run `make harbol_static` which will make the static library version of libharbol.
-for a shared library version, run `make harbol_shared`. to clean up the `.o` files, run `make clean`.
+for a shared library version, run `make harbol_shared`.
+
+To clean up the `.o` files, run `make clean`.
+
+To build a debug version of the library, run `make debug`.
 
 ### Testing
 
-For testing code changes or additions, simply run `make test` with `test_suite.c` in the repository which will build an executable called `harbol_testprogram`.
+For testing code changes or additions, simply run `make test` with `test_suite.c` in the directory which will build an executable called `harbol_testprogram`.
 
 
 ## Credits

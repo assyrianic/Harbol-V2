@@ -18,6 +18,7 @@ void test_harbol_tree(void);
 void test_harbol_linkmap(void);
 void test_harbol_cfg(void);
 void test_harbol_plugins(void);
+void test_harbol_veque(void);
 
 FILE *g_harbol_debug_stream = NULL;
 
@@ -61,6 +62,8 @@ int main()
 	test_harbol_objpool();
 	test_harbol_cache();
 	test_harbol_mempool();
+	
+	test_harbol_veque();
 	
 	fclose(g_harbol_debug_stream), g_harbol_debug_stream=NULL;
 }
@@ -1687,180 +1690,39 @@ void test_harbol_plugins(void)
 	harbol_plugin_mod_clear(&pm, on_plugin_unload);
 }
 
-/*
-static void __print_tabs(const size_t t)
-{
-	for( size_t i=0; i<t; i++ )
-		fprintf(g_harbol_debug_stream, "\t");
-}
-*/
-/*
-static void __print_rbtree(const struct HarbolMemChild *const n, const size_t t)
-{
-	if( n==NULL ) {
-		fputs("node is NULL\n", g_harbol_debug_stream);
-		return;
-	} else {
-		__print_tabs(t);
-		fprintf(g_harbol_debug_stream, "n (%" PRIuPTR ") | Size == %zu\n", (uintptr_t)n, n->Size);
-		if( n->Link[Left] != NULL ) {
-			__print_tabs(t+1);
-			fputs("Left:\n", g_harbol_debug_stream);
-			__print_rbtree(n->Link[Left], t+2);
-		}
-		
-		if( n->Link[Rite] != NULL ) {
-			__print_tabs(t+1);
-			fputs("Right:\n", g_harbol_debug_stream);
-			__print_rbtree(n->Link[Rite], t+2);
-		}
-	}
-}
 
-static void __print_rbll(const struct HarbolMemChild *const n)
-{
-	if( n==NULL )
-		fputs("__print_rbll :: node is NULL\n", g_harbol_debug_stream);
-	else {
-		fputs("\nPrinting Red-Black Linked List:\n", g_harbol_debug_stream);
-		for( const struct HarbolMemChild *i=n; i != NULL; i = i->Link[Next] )
-			fprintf(g_harbol_debug_stream, "i (%" PRIuPTR ") | Size == %zu\n", (uintptr_t)i, i->Size);
-	}
-}
-
-void test_harbol_treepool(void)
+void test_harbol_veque(void)
 {
 	if( !g_harbol_debug_stream )
 		return;
-	fputs("treepool :: test init.\n", g_harbol_debug_stream);
-	struct HarbolTreePool i = harbol_treepool_create(1000);
-	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_treepool_mem_remaining(&i));
 	
-	// test giving memory
-	fputs("treepool :: test giving memory.\n", g_harbol_debug_stream);
-	fputs("\ntreepool :: allocating int ptr.\n", g_harbol_debug_stream);
-	int *p = harbol_treepool_alloc(&i, sizeof *p);
-	fprintf(g_harbol_debug_stream, "p is null? '%s'\n", p ? "no" : "yes");
-	if( p ) {
-		*p = 500;
-		fprintf(g_harbol_debug_stream, "p's value: %i\n", *p);
-	}
-	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_treepool_mem_remaining(&i));
-	fprintf(g_harbol_debug_stream, "nodes in freetree : %zu\n", i.FreeTree.Len);
-	fputs("\nPrinting Red-Black Tree:\n", g_harbol_debug_stream);
-	__print_rbtree(i.FreeTree.Root, 0);
-	__print_rbll(i.FreeTree.Root);
+	fputs("veque :: test init.\n", g_harbol_debug_stream);
+	struct HarbolVeque i = harbol_veque_create(sizeof(union Value), 10);
+	struct HarbolVeque *p = harbol_veque_new(sizeof(union Value), 10);
+	
+	fprintf(g_harbol_debug_stream, "\nveque :: initialization good?: '%s'\n", p->Table != NULL ? "yes" : "no");
+	
+	fputs("\nveque :: test insertions to front and back.\n", g_harbol_debug_stream);
+	harbol_veque_insert_front(&i, &(union Value){2});
+	harbol_veque_insert_front(p, &(union Value){2});
+	
+	harbol_veque_insert_back(&i, &(union Value){1});
+	harbol_veque_insert_back(p, &(union Value){1});
+	
+	union Value *v1=harbol_veque_get_front(&i);
+	fprintf(g_harbol_debug_stream, "\nveque :: v1: '%" PRIi64 "'\n", v1->Int64);
+	
+	union Value *v2=harbol_veque_get_back(&i);
+	fprintf(g_harbol_debug_stream, "\nveque :: v2: '%" PRIi64 "'\n", v2->Int64);
+	
+	v2--;
+	fprintf(g_harbol_debug_stream, "\nveque :: *--v2: '%" PRIi64 "'\n", v2->Int64);
+	
+	fprintf(g_harbol_debug_stream, "\nveque :: v1 (%" PRIuPTR ") , v2 (%" PRIuPTR ")\n", (uintptr_t)v1, (uintptr_t)++v2);
+	fprintf(g_harbol_debug_stream, "\nveque :: count: %zu\n", harbol_veque_count(p));
 	
 	
-	fputs("\ntreepool :: allocating float ptr.\n", g_harbol_debug_stream);
-	float *f = harbol_treepool_alloc(&i, sizeof *f);
-	fprintf(g_harbol_debug_stream, "f is null? '%s'\n", f ? "no" : "yes");
-	if( f ) {
-		*f = 500.5f;
-		fprintf(g_harbol_debug_stream, "f's value: %f\n", *f);
-	}
-	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_treepool_mem_remaining(&i));
-	fprintf(g_harbol_debug_stream, "nodes in freetree : %zu\n", i.FreeTree.Len);
-	fputs("\nPrinting Red-Black Tree:\n", g_harbol_debug_stream);
-	__print_rbtree(i.FreeTree.Root, 0);
-	__print_rbll(i.FreeTree.Root);
-	
-	// test releasing memory
-	fputs("\ntreepool :: test releasing memory.\n", g_harbol_debug_stream);
-	harbol_treepool_free(&i, p);
-	harbol_treepool_free(&i, p), p=NULL;
-	
-	fprintf(g_harbol_debug_stream, "nodes in freetree : %zu\n", i.FreeTree.Len);
-	fputs("\nPrinting Red-Black Tree:\n", g_harbol_debug_stream);
-	__print_rbtree(i.FreeTree.Root, 0);
-	__print_rbll(i.FreeTree.Root);
-	//char *c = harbol_treepool_alloc(&i, sizeof *c * 3);
-	
-	harbol_treepool_free(&i, f);
-	
-	harbol_treepool_free(&i, f), f=NULL;
-	//harbol_treepool_free(&i, c), c=NULL;
-	
-	fprintf(g_harbol_debug_stream, "nodes in freetree : %zu\n", i.FreeTree.Len);
-	fputs("\nPrinting Red-Black Tree:\n", g_harbol_debug_stream);
-	__print_rbtree(i.FreeTree.Root, 0);
-	__print_rbll(i.FreeTree.Root);
-	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_treepool_mem_remaining(&i));
-	
-	// test random allocs
-	fputs("\ntreepool :: test random allocs.\n", g_harbol_debug_stream);
-	double *fg = harbol_treepool_alloc(&i, sizeof *fg * 10);
-	char *fff = harbol_treepool_alloc(&i, sizeof *fff * 50);
-	float *f32 = harbol_treepool_alloc(&i, sizeof *f32 * 23);
-	char *jj = harbol_treepool_alloc(&i, sizeof *jj * 100);
-	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_treepool_mem_remaining(&i));
-	
-	struct HarbolMemNode *ac = harbol_treepool_alloc(&i, sizeof *ac * 31);
-	harbol_treepool_free(&i, fff);
-	harbol_treepool_free(&i, fg);
-	harbol_treepool_free(&i, ac);
-	harbol_treepool_free(&i, f32);
-	harbol_treepool_free(&i, jj);
-	fprintf(g_harbol_debug_stream, "nodes in freetree : %zu\n", i.FreeTree.Len);
-	fputs("\nPrinting Red-Black Tree:\n", g_harbol_debug_stream);
-	__print_rbtree(i.FreeTree.Root, 0);
-	__print_rbll(i.FreeTree.Root);
-	fprintf(g_harbol_debug_stream, "remaining heap mem: '%zu'\n", harbol_treepool_mem_remaining(&i));
-	
-	// test using heap to make a unilinked list!
-	fputs("\ntreepool :: test using heap for unilinked list.\n", g_harbol_debug_stream);
-	struct HarbolUniList *list = harbol_treepool_alloc(&i, sizeof *list);
-	assert( list != NULL );
-	
-	struct HarbolUniNode *node1 = harbol_treepool_alloc(&i, sizeof *node1);
-	assert( node1 != NULL );
-	node1->Data = (uint8_t *)&(union Value){.Int64 = 1};
-	harbol_unilist_add_node_at_tail(list, node1);
-	
-	struct HarbolUniNode *node2 = harbol_treepool_alloc(&i, sizeof *node2);
-	assert( node2 != NULL );
-	node2->Data = (uint8_t *)&(union Value){.Int64 = 2};
-	harbol_unilist_add_node_at_tail(list, node2);
-	
-	struct HarbolUniNode *node3 = harbol_treepool_alloc(&i, sizeof *node3);
-	assert( node3 != NULL );
-	node3->Data = (uint8_t *)&(union Value){.Int64 = 3};
-	harbol_unilist_add_node_at_tail(list, node3);
-	
-	struct HarbolUniNode *node4 = harbol_treepool_alloc(&i, sizeof *node4);
-	assert( node4 != NULL );
-	node4->Data = (uint8_t *)&(union Value){.Int64 = 4};
-	harbol_unilist_add_node_at_tail(list, node4);
-	
-	struct HarbolUniNode *node5 = harbol_treepool_alloc(&i, sizeof *node5);
-	assert( node5 != NULL );
-	node5->Data = (uint8_t *)&(union Value){.Int64 = 5};
-	harbol_unilist_add_node_at_tail(list, node5);
-	
-	for( struct HarbolUniNode *n=list->Head; n != NULL; n = n->Next )
-		fprintf(g_harbol_debug_stream, "uninode value : %" PRIi64 "\n", ((union Value *)n->Data)->Int64);
-	
-	harbol_treepool_free(&i, node1), node1=NULL;
-	harbol_treepool_free(&i, list), list=NULL;
-	harbol_treepool_free(&i, node2), node2=NULL;
-	harbol_treepool_free(&i, node4), node4=NULL;
-	harbol_treepool_free(&i, node5), node5=NULL;
-	
-	fprintf(g_harbol_debug_stream, "\npre-defrag nodes in freetree : %zu\n", i.FreeTree.Len);
-	fputs("\nPrinting Red-Black Tree:\n", g_harbol_debug_stream);
-	__print_rbtree(i.FreeTree.Root, 0);
-	__print_rbll(i.FreeTree.Root);
-	
-	harbol_treepool_defrag(&i);
-	
-	fprintf(g_harbol_debug_stream, "\npost-defrag nodes in freetree : %zu\n", i.FreeTree.Len);
-	fputs("\nPrinting Red-Black Tree:\n", g_harbol_debug_stream);
-	__print_rbtree(i.FreeTree.Root, 0);
-	__print_rbll(i.FreeTree.Root);
-	
-	harbol_treepool_free(&i, node3), node3=NULL;
-	
-	fputs("\ntreepool :: test destruction.\n", g_harbol_debug_stream);
-	harbol_treepool_clear(&i);
+	fputs("\nveque :: test destruction.\n", g_harbol_debug_stream);
+	harbol_veque_clear(&i, NULL);
+	harbol_veque_free(&p, NULL);
 }
-*/

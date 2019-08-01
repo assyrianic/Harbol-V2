@@ -1,13 +1,13 @@
 #ifndef HARBOL_TREE_INCLUDED
 #	define HARBOL_TREE_INCLUDED
 
-#include "../harbol_common_defines.h"
-#include "../harbol_common_includes.h"
-#include "../vector/vector.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "../harbol_common_defines.h"
+#include "../harbol_common_includes.h"
+#include "../vector/vector.h"
 
 struct HarbolTree {
 	struct HarbolVector Children;

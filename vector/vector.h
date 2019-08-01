@@ -1,12 +1,12 @@
 #ifndef HARBOL_VECTOR_INCLUDED
 #	define HARBOL_VECTOR_INCLUDED
 
-#include "../harbol_common_defines.h"
-#include "../harbol_common_includes.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "../harbol_common_defines.h"
+#include "../harbol_common_includes.h"
 
 #ifndef VEC_DEFAULT_SIZE
 #	define VEC_DEFAULT_SIZE    4

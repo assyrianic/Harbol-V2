@@ -1,14 +1,15 @@
 #ifndef HARBOL_CFG_INCLUDED
 #	define HARBOL_CFG_INCLUDED
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "../harbol_common_defines.h"
 #include "../harbol_common_includes.h"
 #include "../linkmap/linkmap.h"
 #include "../variant/variant.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 enum HarbolCfgType {
 	HarbolCfgType_Null,

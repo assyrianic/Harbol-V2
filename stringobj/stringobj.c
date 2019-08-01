@@ -171,9 +171,10 @@ HARBOL_EXPORT int32_t harbol_string_format(struct HarbolString *const restrict s
 	va_end(ap);
 	
 	const bool resize_res = __harbol_resize_string(string, size);
-	if( !resize_res )
+	if( !resize_res ) {
+		va_end(st);
 		return -1;
-	else {
+	} else {
 		/* vsnprintf always checks n-1 so gotta increase len a bit to accomodate. */
 		const int32_t result = vsnprintf(string->CStr, string->Len+1, fmt, st);
 		va_end(st);
@@ -192,9 +193,10 @@ HARBOL_EXPORT int32_t harbol_string_add_format(struct HarbolString *const restri
 	
 	const size_t old_size = string->Len;
 	const bool resize_res = __harbol_resize_string(string, size + old_size);
-	if( !resize_res )
+	if( !resize_res ) {
+		va_end(st);
 		return -1;
-	else {
+	} else {
 		const int32_t result = vsnprintf(&string->CStr[old_size], string->Len-old_size+1, fmt, st);
 		va_end(st);
 		return result;

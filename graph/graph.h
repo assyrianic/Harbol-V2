@@ -1,14 +1,13 @@
 #ifndef HARBOL_GRAPH_INCLUDED
 #	define HARBOL_GRAPH_INCLUDED
 
-#include "../harbol_common_defines.h"
-#include "../harbol_common_includes.h"
-#include "../vector/vector.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include "../harbol_common_defines.h"
+#include "../harbol_common_includes.h"
+#include "../vector/vector.h"
 
 struct HarbolEdge {
 	uint8_t *Weight;

@@ -282,4 +282,5 @@
 #	define inline __inline
 #endif
 
+
 #endif /* HARBOL_COMMON_DEFINES_INCLUDED */

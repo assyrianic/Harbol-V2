@@ -1,12 +1,12 @@
 #ifndef HARBOL_VARIANT_INCLUDED
 #	define HARBOL_VARIANT_INCLUDED
 
-#include "../harbol_common_defines.h"
-#include "../harbol_common_includes.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "../harbol_common_defines.h"
+#include "../harbol_common_includes.h"
 
 enum HarbolType {
 	HarbolType_Nil = 0,

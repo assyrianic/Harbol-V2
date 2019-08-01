@@ -2,10 +2,10 @@ CC = gcc
 CFLAGS = -Wall -Wextra -pedantic -std=c99 -s -O2
 TESTFLAGS = -Wall -Wextra -pedantic -std=c99 -g -O2
 
-SRCS = plugins.c
+SRCS = veque.c
 OBJS = $(SRCS:.c=.o)
 
-harbol_plugins:
+harbol_veque:
 	$(CC) $(CFLAGS) -c $(SRCS)
 
 debug:

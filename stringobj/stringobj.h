@@ -1,12 +1,12 @@
 #ifndef HARBOL_STRING_INCLUDED
 #	define HARBOL_STRING_INCLUDED
 
-#include "../harbol_common_defines.h"
-#include "../harbol_common_includes.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "../harbol_common_defines.h"
+#include "../harbol_common_includes.h"
 
 struct HarbolString {
 	char *CStr;

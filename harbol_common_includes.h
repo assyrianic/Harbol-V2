@@ -9,9 +9,9 @@
 #include <stdarg.h>
 #include <float.h>
 
-// placing this here so we can get this after including inttypes.h
+/* placing this here so we can get this after including inttypes.h */
 #if defined(INTPTR_MAX)
-#	if defined(INT32_MAX) && INTPTR_MAX>=INT32_MAX
+#	if defined(INT32_MAX) && INTPTR_MAX==INT32_MAX
 #		ifndef HARBOL32
 #			define HARBOL32
 #		endif
@@ -20,11 +20,13 @@
 #		ifndef HARBOL64
 #			define HARBOL64
 #		endif
+#		ifndef HARBOL32
+#			define HARBOL32
+#		endif
 #	endif
 #endif
 
 /* types as defined by Harbol. */
-
 #ifndef __index_t_defined
 #	define __index_t_defined
 typedef intptr_t index_t;
@@ -56,7 +58,6 @@ typedef struct { const char *cstr; const size_t len; } string_t;
  * 
  * so in summary: float <= double <= long double
  */
-
 #ifndef __float32_t_defined
 #	if FLT_MANT_DIG==24
 #		define __float32_t_defined

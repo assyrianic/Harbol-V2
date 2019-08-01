@@ -1,15 +1,14 @@
 #ifndef HARBOL_MAP_INCLUDED
 #	define HARBOL_MAP_INCLUDED
 
-#include "../harbol_common_defines.h"
-#include "../harbol_common_includes.h"
-
-#include "../stringobj/stringobj.h"
-#include "../vector/vector.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "../harbol_common_defines.h"
+#include "../harbol_common_includes.h"
+#include "../stringobj/stringobj.h"
+#include "../vector/vector.h"
 
 #ifndef MAP_DEFAULT_SIZE
 #	define MAP_DEFAULT_SIZE    8

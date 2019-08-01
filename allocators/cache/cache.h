@@ -1,12 +1,13 @@
 #ifndef HARBOL_LINEAR_INCLUDED
 #	define HARBOL_LINEAR_INCLUDED
 
-#include "../../harbol_common_defines.h"
-#include "../../harbol_common_includes.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "../../harbol_common_defines.h"
+#include "../../harbol_common_includes.h"
+
 
 struct HarbolCache {
 	uint8_t *Base, *Offs;
