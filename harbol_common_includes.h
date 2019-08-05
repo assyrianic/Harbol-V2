@@ -7,6 +7,7 @@
 #include <inttypes.h>
 #include <string.h>
 #include <stdarg.h>
+#include <limits.h>
 #include <float.h>
 
 /* placing this here so we can get this after including inttypes.h */
@@ -69,7 +70,13 @@ typedef struct { const char *cstr; const size_t len; } string_t;
 #		define PRIf32 "f"
 #		define strtof32  strtod
 		typedef double float32_t;
+#	else
+#		error "no appropriate float32 implementation"
 #	endif
+#endif
+
+#ifdef C11
+	_Static_assert(sizeof(float32_t) * CHAR_BIT == 32, "Unexpected `float32_t` size");
 #endif
 
 #ifndef __float64_t_defined
@@ -89,7 +96,13 @@ typedef struct { const char *cstr; const size_t len; } string_t;
 #		define PRIf64    "f"
 #		define strtof64  strtof
 		typedef float float64_t;
+#	else
+#		error "no appropriate float64 implementation"
 #	endif
+#endif
+
+#ifdef C11
+	_Static_assert(sizeof(float64_t) * CHAR_BIT == 64, "Unexpected `float64_t` size");
 #endif
 
 #ifndef __floatmax_t_defined
@@ -108,6 +121,8 @@ typedef struct { const char *cstr; const size_t len; } string_t;
 #		define PRIfMAX    "f"
 #		define strtofmax  strtof
 		typedef float floatmax_t;
+#	else
+#		error "no appropriate floatmax implementation"
 #	endif
 #endif
 
