@@ -6,7 +6,7 @@
 
 HARBOL_EXPORT struct HarbolVector *harbol_vector_new(const size_t datasize, const size_t default_size)
 {
-	struct HarbolVector *v = calloc(1, sizeof *v);
+	struct HarbolVector *v = harbol_alloc(1, sizeof *v);
 	if( v != NULL )
 		*v = harbol_vector_create(datasize, default_size);
 	return v;
@@ -25,7 +25,7 @@ HARBOL_EXPORT bool harbol_vector_clear(struct HarbolVector *const v, void dtor(v
 		for( uindex_t i=0; i<v->Len; i++ )
 			dtor((void**)&(uint8_t *){&v->Table[i * v->DataSize]});
 	
-	free(v->Table), v->Table = NULL;
+	harbol_free(v->Table), v->Table = NULL;
 	v->Len = v->Count = 0;
 	return true;
 }
@@ -36,7 +36,7 @@ HARBOL_EXPORT bool harbol_vector_free(struct HarbolVector **const vecref, void d
 		return false;
 	else {
 		const bool res = harbol_vector_clear(*vecref, dtor);
-		free(*vecref), *vecref=NULL;
+		harbol_free(*vecref), *vecref=NULL;
 		return res;
 	}
 }

@@ -7,10 +7,10 @@
 
 HARBOL_EXPORT struct HarbolUniNode *harbol_uninode_new(void *const data, const size_t datasize)
 {
-	struct HarbolUniNode *restrict node = calloc(1, sizeof *node);
+	struct HarbolUniNode *restrict node = harbol_alloc(1, sizeof *node);
 	if( node != NULL ) {
 		node->Next = NULL;
-		node->Data = calloc(datasize, sizeof *node->Data);
+		node->Data = harbol_alloc(datasize, sizeof *node->Data);
 		if( node->Data==NULL )
 			return NULL;
 		else memcpy(node->Data, data, datasize);
@@ -26,9 +26,9 @@ HARBOL_EXPORT bool harbol_uninode_free(struct HarbolUniNode **const uninoderef, 
 		if( dtor != NULL )
 			dtor((void**)&(*uninoderef)->Data);
 		
-		free((*uninoderef)->Data), (*uninoderef)->Data=NULL;
+		harbol_free((*uninoderef)->Data), (*uninoderef)->Data=NULL;
 		harbol_uninode_free(&(*uninoderef)->Next, dtor);
-		free(*uninoderef), *uninoderef = NULL;
+		harbol_free(*uninoderef), *uninoderef = NULL;
 		return true;
 	}
 }
@@ -38,7 +38,7 @@ HARBOL_EXPORT bool harbol_uninode_set(struct HarbolUniNode *const restrict unino
 	if( datasize==0 )
 		return false;
 	else if( uninode->Data==NULL ) {
-		uninode->Data = calloc(datasize, sizeof *uninode->Data);
+		uninode->Data = harbol_alloc(datasize, sizeof *uninode->Data);
 		return( uninode->Data==NULL ) ? false : memcpy(uninode->Data, data, datasize) != NULL;
 	} else {
 		return memcpy(uninode->Data, data, datasize) != NULL;
@@ -50,7 +50,7 @@ HARBOL_EXPORT bool harbol_uninode_set(struct HarbolUniNode *const restrict unino
 
 HARBOL_EXPORT struct HarbolUniList *harbol_unilist_new(const size_t datasize)
 {
-	struct HarbolUniList *list = calloc(1, sizeof *list);
+	struct HarbolUniList *list = harbol_alloc(1, sizeof *list);
 	if( list != NULL )
 		*list = harbol_unilist_create(datasize);
 	return list;
@@ -75,7 +75,7 @@ HARBOL_EXPORT bool harbol_unilist_free(struct HarbolUniList **const listref, voi
 		return false;
 	else {
 		const bool res = harbol_unilist_clear(*listref, dtor);
-		free(*listref), *listref=NULL;
+		harbol_free(*listref), *listref=NULL;
 		return res && *listref==NULL;
 	}
 }
@@ -279,8 +279,8 @@ HARBOL_EXPORT bool harbol_unilist_index_del(struct HarbolUniList *const list, co
 		
 		if( dtor != NULL )
 			dtor((void**)&node->Data);
-		free(node->Data);
-		free(node); node=NULL;
+		harbol_free(node->Data);
+		harbol_free(node); node=NULL;
 		
 		list->Len--;
 		if( !list->Len && list->Tail != NULL )
@@ -314,9 +314,9 @@ HARBOL_EXPORT bool harbol_unilist_node_del(struct HarbolUniList *const list, str
 		
 		if( dtor != NULL )
 			dtor((void**)&node->Data);
-		free(node->Data);
+		harbol_free(node->Data);
 		
-		free(*noderef); *noderef=NULL;
+		harbol_free(*noderef); *noderef=NULL;
 		list->Len--;
 		return true;
 	}

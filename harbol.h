@@ -2,7 +2,7 @@
 #	define HARBOL_INCLUDED
 #	define HARBOL_VERSION_MAJOR    2
 #	define HARBOL_VERSION_MINOR    2
-#	define HARBOL_VERSION_PATCH    0
+#	define HARBOL_VERSION_PATCH    4
 #	define HARBOL_VERSION_PHASE    'B'
 #	define STR_HELPER(x)    #x
 #	define STR(x)    STR_HELPER(x)
@@ -18,8 +18,6 @@ extern "C" {
 #ifndef C99
 #	error "Harbol requires a C99 compliant compiler with at least stdbool.h, inttypes.h, compound literals, and designated initializers."
 #endif
-
-#include "harbol_common_includes.h"
 
 /************* General-Purpose Free List-based Memory Pool *************/
 #include "allocators/mempool/mempool.h"

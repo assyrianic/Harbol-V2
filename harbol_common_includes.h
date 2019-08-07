@@ -127,24 +127,52 @@ typedef struct { const char *cstr; const size_t len; } string_t;
 #endif
 
 
-static inline void *harbol_alloc(const size_t num, const size_t size)
+//#define HARBOL_USE_MEMPOOL
+
+#ifdef HARBOL_USE_MEMPOOL
+	struct HarbolMemPool;
+	extern struct HarbolMemPool *g_pool;
+#endif
+
+inline void *harbol_alloc(const size_t num, const size_t size)
 {
+#ifdef HARBOL_USE_MEMPOOL
+	void *harbol_mempool_alloc(struct HarbolMemPool *mempool, size_t bytes);
+	return harbol_mempool_alloc(g_pool, num * size);
+#else
 	return calloc(num, size);
+#endif
 }
 
-static inline void *harbol_realloc(void *const ptr, const size_t num, const size_t size)
+inline void *harbol_realloc(void *const ptr, const size_t bytes)
 {
-	return realloc(ptr, num * size);
+#ifdef HARBOL_USE_MEMPOOL
+	void *harbol_mempool_realloc(struct HarbolMemPool *mempool, void *ptr, size_t bytes);
+	return harbol_mempool_realloc(g_pool, ptr, bytes);
+#else
+	return realloc(ptr, bytes);
+#endif
 }
 
-static inline void harbol_free(void *const ptr)
+inline void harbol_free(void *const ptr)
 {
+#ifdef HARBOL_USE_MEMPOOL
+	bool harbol_mempool_free(struct HarbolMemPool *mempool, void *ptr);
+	harbol_mempool_free(g_pool, ptr);
+#else
 	free(ptr);
+#endif
 }
 
-static inline void harbol_clean(void **const ptr)
+inline void harbol_clean(void **const ptrref)
 {
-	free(*ptr), *ptr = NULL;
+#ifdef HARBOL_USE_MEMPOOL
+	bool harbol_mempool_cleanup(struct HarbolMemPool *mempool, void **ptrref);
+	harbol_mempool_cleanup(g_pool, ptrref);
+#else
+	free(*ptrref);
+#endif
+	*ptrref = NULL;
 }
 
 static inline bool harbol_generic_vector_resizer(void *const vec, const size_t new_size, const size_t element_size)
@@ -163,7 +191,7 @@ static inline bool harbol_generic_vector_resizer(void *const vec, const size_t n
 		const bool increasing_mem = (old_size < new_size);
 		if( increasing_mem ) {
 			// allocate new table.
-			uint8_t *const newdata = calloc(new_size, element_size);
+			uint8_t *const newdata = harbol_alloc(new_size, element_size);
 			if( newdata==NULL ) {
 				return false;
 			} else {
@@ -171,13 +199,13 @@ static inline bool harbol_generic_vector_resizer(void *const vec, const size_t n
 				// copy the old table to new then free old table.
 				if( obj->tab != NULL ) {
 					memcpy(newdata, obj->tab, element_size * old_size);
-					free(obj->tab), obj->tab = NULL;
+					harbol_free(obj->tab), obj->tab = NULL;
 				}
 				obj->tab = newdata;
 				return true;
 			}
 		} else {
-			uint8_t *result = realloc(obj->tab, element_size * new_size);
+			uint8_t *result = harbol_realloc(obj->tab, element_size * new_size);
 			if( result==NULL ) {
 				return false;
 			} else {
@@ -279,12 +307,12 @@ static inline NO_NULL uint8_t *make_buffer_from_binary(const char file_name[rest
 			fclose(file);
 			return NULL;
 		} else {
-			uint8_t *restrict stream = calloc(filesize, sizeof *stream);
+			uint8_t *restrict stream = harbol_alloc(filesize, sizeof *stream);
 			const size_t bytes_read = fread(stream, sizeof *stream, filesize, file);
 			fclose(file), file=NULL;
 			
 			if( bytes_read != (size_t)filesize ) {
-				free(stream), stream=NULL;
+				harbol_free(stream), stream=NULL;
 				return NULL;
 			}
 			else return stream;

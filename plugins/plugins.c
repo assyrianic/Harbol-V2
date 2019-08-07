@@ -113,7 +113,7 @@ HARBOL_EXPORT bool harbol_plugin_reload(struct HarbolPlugin *const plugin)
 
 HARBOL_EXPORT struct HarbolPluginMod *harbol_plugin_mod_new(const char dir[restrict static 1], void *const restrict userdata, const bool load_plugins, HarbolPluginEvent load_cb)
 {
-	struct HarbolPluginMod *const restrict mod = calloc(1, sizeof *mod);
+	struct HarbolPluginMod *const restrict mod = harbol_alloc(1, sizeof *mod);
 	if( mod != NULL )
 		*mod = harbol_plugin_mod_create(dir, userdata, load_plugins, load_cb);
 	return mod;
@@ -240,7 +240,7 @@ HARBOL_EXPORT bool harbol_plugin_mod_free(struct HarbolPluginMod **const manager
 		return false;
 	else {
 		harbol_plugin_mod_clear(*managerref, unload_cb);
-		free(*managerref), *managerref=NULL;
+		harbol_free(*managerref), *managerref=NULL;
 		return true;
 	}
 }

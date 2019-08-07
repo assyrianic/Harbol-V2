@@ -22,6 +22,10 @@ void test_harbol_veque(void);
 
 FILE *g_harbol_debug_stream = NULL;
 
+#ifdef HARBOL_USE_MEMPOOL
+struct HarbolMemPool *g_pool;
+#endif
+
 union Value {
 	int64_t Int64;
 };
@@ -45,7 +49,10 @@ int main()
 		sizeof(floatmax_t)==sizeof(double),
 		sizeof(floatmax_t)==sizeof(float)
 	);
-	
+#ifdef HARBOL_USE_MEMPOOL
+	struct HarbolMemPool m = harbol_mempool_create(1000000);
+	g_pool = &m;
+#endif
 	test_harbol_string();
 	test_harbol_vector();
 	test_harbol_unilist();
@@ -66,6 +73,23 @@ int main()
 	test_harbol_veque();
 	
 	fclose(g_harbol_debug_stream), g_harbol_debug_stream=NULL;
+#ifdef HARBOL_USE_MEMPOOL
+	harbol_mempool_clear(g_pool);
+#endif
+}
+
+static void __print_mempool_nodes(const struct HarbolMemPool *const mempool)
+{
+	fputs("\nmempool :: printing mempool free bucket.\n", g_harbol_debug_stream);
+	for( uindex_t i=0; i<HARBOL_BUCKET_SIZE; i++ )
+		for( struct HarbolMemNode *n=mempool->Buckets[i]; n != NULL; n = n->Next )
+			fprintf(g_harbol_debug_stream, "mempool bucket[%zu] node :: n (%" PRIuPTR ") size == %zu.\n", i, (uintptr_t)n, n->Size);
+	
+	fputs("\nmempool :: printing mempool free list.\n", g_harbol_debug_stream);
+	for( struct HarbolMemNode *n = mempool->FreeList.Head; n != NULL; n = n->Next )
+		fprintf(g_harbol_debug_stream, "mempool list node :: n (%" PRIuPTR ") size == %zu.\n", (uintptr_t)n, n->Size);
+	
+	fprintf(g_harbol_debug_stream, "mempool memory remaining :: %zu | freenodes: %zu.\n", harbol_mempool_mem_remaining(mempool), mempool->FreeList.Len);
 }
 
 void test_harbol_string(void)
@@ -851,19 +875,6 @@ void test_harbol_map(void)
 }
 
 
-
-static void __print_mempool_nodes(const struct HarbolMemPool *const mempool)
-{
-	fputs("\nmempool :: printing mempool free bucket.\n", g_harbol_debug_stream);
-	for( uindex_t i=0; i<HARBOL_BUCKET_SIZE; i++ )
-		for( struct HarbolMemNode *n=mempool->Buckets[i]; n != NULL; n = n->Next )
-			fprintf(g_harbol_debug_stream, "mempool bucket[%zu] node :: n (%" PRIuPTR ") size == %zu.\n", i, (uintptr_t)n, n->Size);
-	
-	fputs("\nmempool :: printing mempool free list.\n", g_harbol_debug_stream);
-	for( struct HarbolMemNode *n = mempool->FreeList.Head; n != NULL; n = n->Next )
-		fprintf(g_harbol_debug_stream, "mempool list node :: n (%" PRIuPTR ") size == %zu.\n", (uintptr_t)n, n->Size);
-}
-
 void test_harbol_mempool(void)
 {
 	if( !g_harbol_debug_stream )
@@ -1200,6 +1211,7 @@ void test_harbol_graph(void)
 	
 	// Test adding Vertices
 	fputs("\ngraph :: test adding Vertices.\n", g_harbol_debug_stream);
+	
 	for( size_t c=0; c<5; c++ ) {
 		harbol_graph_add_vert(&g, &(union Value){.Int64=c+1});
 		harbol_graph_add_vert(p, &(union Value){.Int64=c+1});

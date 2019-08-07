@@ -7,7 +7,7 @@
 
 HARBOL_EXPORT struct HarbolVeque *harbol_veque_new(const size_t datasize, const size_t len)
 {
-	struct HarbolVeque *veque = calloc(1, sizeof *veque);
+	struct HarbolVeque *veque = harbol_alloc(1, sizeof *veque);
 	if( veque != NULL )
 		*veque = harbol_veque_create(datasize, len);
 	return veque;
@@ -16,7 +16,7 @@ HARBOL_EXPORT struct HarbolVeque *harbol_veque_new(const size_t datasize, const 
 HARBOL_EXPORT struct HarbolVeque harbol_veque_create(const size_t datasize, const size_t len)
 {
 	struct HarbolVeque veque = EMPTY_HARBOL_VEQUE;
-	veque.Table = calloc(datasize, len);
+	veque.Table = harbol_alloc(datasize, len);
 	if( veque.Table==NULL )
 		return veque;
 	else {
@@ -32,7 +32,7 @@ HARBOL_EXPORT bool harbol_veque_clear(struct HarbolVeque *const veque, void dtor
 		for( uindex_t i=0; i<veque->Len; i++ )
 			dtor((void**)&(uint8_t *){&veque->Table[i * veque->DataSize]});
 	
-	free(veque->Table), veque->Table = NULL;
+	harbol_free(veque->Table), veque->Table = NULL;
 	veque->Len = veque->Begin = veque->End = 0;
 	return true;
 }
@@ -43,7 +43,7 @@ HARBOL_EXPORT bool harbol_veque_free(struct HarbolVeque **const vequeref, void d
 		return false;
 	else {
 		const bool res = harbol_veque_clear(*vequeref, dtor);
-		free(*vequeref), *vequeref=NULL;
+		harbol_free(*vequeref), *vequeref=NULL;
 		return res;
 	}
 }

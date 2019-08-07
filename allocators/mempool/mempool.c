@@ -4,25 +4,6 @@
 #	define HARBOL_LIB
 #endif
 
-static NO_NULL void __ll_remove(struct HarbolMemPool *const mempool, struct HarbolMemNode **const node)
-{
-	if( (*node)->Next != NULL )
-		(*node)->Next->Prev = (*node)->Prev;
-	else {
-		mempool->FreeList.Tail = (*node)->Prev;
-		if( mempool->FreeList.Tail != NULL )
-			mempool->FreeList.Tail->Next = NULL;
-	}
-	
-	if( (*node)->Prev != NULL )
-		(*node)->Prev->Next = (*node)->Next;
-	else {
-		mempool->FreeList.Head = (*node)->Next;
-		if( mempool->FreeList.Head != NULL )
-			mempool->FreeList.Head->Prev = NULL;
-	}
-}
-
 HARBOL_EXPORT struct HarbolMemPool harbol_mempool_create(const size_t size)
 {
 	struct HarbolMemPool mempool = EMPTY_HARBOL_MEMPOOL;
@@ -75,22 +56,30 @@ static NO_NULL struct HarbolMemNode *__iterate_freenodes(struct HarbolMemPool *c
 		if( mempool->Buckets[b] != NULL )
 			mempool->Buckets[b]->Prev = NULL;
 		return new_mem;
-	} else if( mempool->FreeList.Head != NULL ) {
+	} else if( mempool->FreeList.Len>0 ) {
 		const size_t mem_split_threshold = 24;
 		// if the freelist is valid, let's allocate FROM the freelist then!
-		for( struct HarbolMemNode **inode = &mempool->FreeList.Head; *inode != NULL; inode = &(*inode)->Next ) {
-			if( (*inode)->Size < bytes )
+		for( struct HarbolMemNode *inode = mempool->FreeList.Head; inode != NULL; inode = inode->Next ) {
+			if( inode->Size < bytes )
 				continue;
-			else if( (*inode)->Size <= bytes + mem_split_threshold ) {
+			else if( inode->Size <= bytes + mem_split_threshold ) {
 				// close in size - reduce fragmentation by not splitting.
-				struct HarbolMemNode *new_mem = *inode;
-				__ll_remove(mempool, inode);
+				struct HarbolMemNode *new_mem = inode;
+				inode->Prev != NULL ? (inode->Prev->Next = inode->Next) : (mempool->FreeList.Head = inode->Next);
+				inode->Next != NULL ? (inode->Next->Prev = inode->Prev) : (mempool->FreeList.Tail = inode->Prev);
+				if( mempool->FreeList.Head != NULL )
+					mempool->FreeList.Head->Prev = NULL;
+				else mempool->FreeList.Tail = NULL;
+				
+				if( mempool->FreeList.Tail != NULL )
+					mempool->FreeList.Tail->Next = NULL;
+				
 				mempool->FreeList.Len--;
 				return new_mem;
 			} else {
 				// split the memory chunk.
-				struct HarbolMemNode *new_mem = (struct HarbolMemNode *)( (uint8_t *)*inode + ((*inode)->Size - bytes) );
-				(*inode)->Size -= bytes;
+				struct HarbolMemNode *new_mem = (struct HarbolMemNode *)( (uint8_t *)inode + (inode->Size - bytes) );
+				inode->Size -= bytes;
 				new_mem->Size = bytes;
 				return new_mem;
 			}
@@ -138,7 +127,7 @@ HARBOL_EXPORT void *harbol_mempool_alloc(struct HarbolMemPool *const mempool, co
 	}
 }
 
-HARBOL_EXPORT void *harbol_mempool_realloc(struct HarbolMemPool *const restrict mempool, void *ptr, const size_t size)
+HARBOL_EXPORT void *harbol_mempool_realloc(struct HarbolMemPool *const restrict mempool, void *const ptr, const size_t size)
 {
 	if( size > mempool->Stack.Size )
 		return NULL;
@@ -154,7 +143,7 @@ HARBOL_EXPORT void *harbol_mempool_realloc(struct HarbolMemPool *const restrict 
 			return NULL;
 		else {
 			struct HarbolMemNode *resized = (struct HarbolMemNode *)(resized_block - sizeof *resized);
-			memmove(resized_block, ptr, (node->Size > resized->Size)? (resized->Size - sizeof *node) : (node->Size - sizeof *node));
+			memmove(resized_block, ptr, ((node->Size > resized->Size)? (resized->Size) : (node->Size)) - sizeof *node);
 			harbol_mempool_free(mempool, ptr);
 			return resized_block;
 		}
@@ -203,7 +192,7 @@ HARBOL_EXPORT bool harbol_mempool_free(struct HarbolMemPool *const restrict memp
 				mempool->FreeList.Len++;
 			} else if( mempool->FreeList.Head->Size > mem_node->Size ) {
 				mem_node->Next = mempool->FreeList.Head;
-				mem_node->Next->Prev = mem_node;
+				mempool->FreeList.Head->Prev = mem_node;
 				mempool->FreeList.Head = mem_node;
 				mempool->FreeList.Len++;
 			} else {
@@ -274,8 +263,14 @@ HARBOL_EXPORT bool harbol_mempool_defrag(struct HarbolMemPool *const mempool)
 				// if node is right at the Stack, merge it back into the Stack.
 				mempool->Stack.Base += (*node)->Size;
 				(*node)->Size = 0;
-				__ll_remove(mempool, node);
+				(*node)->Prev != NULL ? ((*node)->Prev->Next = (*node)->Next) : (mempool->FreeList.Head = (*node)->Next);
+				(*node)->Next != NULL ? ((*node)->Next->Prev = (*node)->Prev) : (mempool->FreeList.Tail = (*node)->Prev);
+				if( mempool->FreeList.Head != NULL )
+					mempool->FreeList.Head->Prev = NULL;
+				else mempool->FreeList.Tail = NULL;
 				
+				if( mempool->FreeList.Tail != NULL )
+					mempool->FreeList.Tail->Next = NULL;
 				mempool->FreeList.Len--;
 				node = &mempool->FreeList.Head;
 			} else if( (uintptr_t)*node + (*node)->Size == (uintptr_t)(*node)->Next ) {
@@ -315,7 +310,6 @@ HARBOL_EXPORT bool harbol_mempool_defrag(struct HarbolMemPool *const mempool)
 				// Next node is at a lower address.
 				// <-[P Prev N]-> <-[P Curr N]-> <-[P Next N]->
 				(*node)->Next->Size += (*node)->Size;
-				
 				(*node)->Size = 0;
 				
 				//           |--------------------|
@@ -334,7 +328,6 @@ HARBOL_EXPORT bool harbol_mempool_defrag(struct HarbolMemPool *const mempool)
 				// Prev node is at a lower address.
 				// <-[P Prev N]-> <-[P Curr N]-> <-[P Next N]->
 				(*node)->Prev->Size += (*node)->Size;
-				
 				(*node)->Size = 0;
 				
 				//           |--------------------|

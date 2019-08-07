@@ -13,20 +13,20 @@ static NO_NULL bool __harbol_resize_string(struct HarbolString *const string, co
 	// as realloc is exponentially faster when we're reducing memory.
 	const bool increasing_mem = (old_size <= new_size);
 	if( increasing_mem ) {
-		char *newstr = calloc(new_size + 1, sizeof *newstr);
+		char *newstr = harbol_alloc(new_size + 1, sizeof *newstr);
 		if( newstr==NULL )
 			return false;
 		else {
 			string->Len = new_size;
 			if( string->CStr != NULL ) {
 				memcpy(newstr, string->CStr, old_size);
-				free(string->CStr), string->CStr=NULL;
+				harbol_free(string->CStr), string->CStr=NULL;
 			}
 			string->CStr = newstr;
 			return true;
 		}
 	} else {
-		string->CStr = realloc(string->CStr, new_size * sizeof *string->CStr + 1);
+		string->CStr = harbol_realloc(string->CStr, new_size * sizeof *string->CStr + 1);
 		if( string->CStr==NULL )
 			return false;
 		else {
@@ -40,7 +40,7 @@ static NO_NULL bool __harbol_resize_string(struct HarbolString *const string, co
 
 HARBOL_EXPORT struct HarbolString *harbol_string_new(const char cstr[restrict])
 {
-	struct HarbolString *restrict string = calloc(1, sizeof *string);
+	struct HarbolString *restrict string = harbol_alloc(1, sizeof *string);
 	if( string != NULL )
 		*string = harbol_string_create(cstr);
 	return string;
@@ -56,7 +56,7 @@ HARBOL_EXPORT struct HarbolString harbol_string_create(const char cstr[restrict]
 HARBOL_EXPORT bool harbol_string_clear(struct HarbolString *const string)
 {
 	if( string->CStr != NULL )
-		free(string->CStr), string->CStr=NULL;
+		harbol_free(string->CStr), string->CStr=NULL;
 	*string = (struct HarbolString)EMPTY_HARBOL_STRING;
 	return true;
 }
@@ -67,7 +67,7 @@ HARBOL_EXPORT bool harbol_string_free(struct HarbolString **const stringref)
 		return false;
 	else {
 		const bool res = harbol_string_clear(*stringref);
-		free(*stringref), *stringref=NULL;
+		harbol_free(*stringref), *stringref=NULL;
 		return res && *stringref==NULL;
 	}
 }

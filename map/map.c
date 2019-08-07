@@ -7,15 +7,15 @@
 
 HARBOL_EXPORT struct HarbolKeyVal *harbol_kvpair_new(const char cstr[restrict static 1], void *const restrict data, const size_t datasize)
 {
-	struct HarbolKeyVal *kv = calloc(1, sizeof *kv);
+	struct HarbolKeyVal *kv = harbol_alloc(1, sizeof *kv);
 	if( kv != NULL ) {
-		kv->Data = calloc(datasize, sizeof *kv->Data);
+		kv->Data = harbol_alloc(datasize, sizeof *kv->Data);
 		if( kv->Data==NULL ) {
-			free(kv), kv=NULL;
+			harbol_free(kv), kv=NULL;
 		} else {
 			kv->Key = harbol_string_create(cstr);
 			if( kv->Key.CStr==NULL )
-				free(kv), kv=NULL;
+				harbol_free(kv), kv=NULL;
 			else memcpy(kv->Data, data, datasize);
 		}
 	}
@@ -28,15 +28,15 @@ HARBOL_EXPORT bool harbol_kvpair_free(struct HarbolKeyVal **const kvpairref, voi
 	if( dtor != NULL )
 		dtor((void**)&(*kvpairref)->Data);
 	if( (*kvpairref)->Data != NULL )
-		free((*kvpairref)->Data), (*kvpairref)->Data = NULL;
-	free(*kvpairref), *kvpairref=NULL;
+		harbol_free((*kvpairref)->Data), (*kvpairref)->Data = NULL;
+	harbol_free(*kvpairref), *kvpairref=NULL;
 	return true;
 }
 
 
 HARBOL_EXPORT struct HarbolMap *harbol_map_new(const size_t datasize)
 {
-	struct HarbolMap *map = calloc(1, sizeof *map);
+	struct HarbolMap *map = harbol_alloc(1, sizeof *map);
 	if( map != NULL )
 		*map = harbol_map_create(datasize);
 	return map;
@@ -59,7 +59,7 @@ HARBOL_EXPORT bool harbol_map_clear(struct HarbolMap *const map, void dtor(void*
 				harbol_kvpair_free(harbol_vector_get(bucket, a), dtor);
 			harbol_vector_clear(bucket, NULL);
 		}
-		free(map->Buckets), map->Buckets=NULL;
+		harbol_free(map->Buckets), map->Buckets=NULL;
 		return true;
 	}
 }
@@ -70,7 +70,7 @@ HARBOL_EXPORT bool harbol_map_free(struct HarbolMap **mapref, void dtor(void**))
 		return false;
 	else {
 		const bool res = harbol_map_clear(*mapref, dtor);
-		free(*mapref), *mapref=NULL;
+		harbol_free(*mapref), *mapref=NULL;
 		return res;
 	}
 }
@@ -184,7 +184,7 @@ HARBOL_EXPORT bool harbol_map_rehash(struct HarbolMap *const map, const size_t n
 {
 	const size_t old_len = map->Len;
 	struct HarbolVector *curr = map->Buckets;
-	map->Buckets = calloc(new_len, sizeof *map->Buckets);
+	map->Buckets = harbol_alloc(new_len, sizeof *map->Buckets);
 	if( map->Buckets==NULL ) {
 		map->Buckets = curr;
 		return false;
@@ -196,9 +196,9 @@ HARBOL_EXPORT bool harbol_map_rehash(struct HarbolMap *const map, const size_t n
 				struct HarbolVector *entry = &curr[i];
 				for( uindex_t a=0; a<entry->Count; a++ )
 					harbol_map_insert_kv(map, *(struct HarbolKeyVal **)harbol_vector_get(entry, a));
-				free(entry->Table), entry->Table = NULL;
+				harbol_free(entry->Table), entry->Table = NULL;
 			}
-			free(curr), curr=NULL;
+			harbol_free(curr), curr=NULL;
 		}
 		return true;
 	}

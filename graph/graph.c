@@ -13,7 +13,7 @@
 HARBOL_EXPORT struct HarbolEdge harbol_edge_create(void *const data, const size_t datasize, const index_t link)
 {
 	struct HarbolEdge edge = EMPTY_HARBOL_EDGE;
-	edge.Weight = calloc(datasize, sizeof *edge.Weight);
+	edge.Weight = harbol_alloc(datasize, sizeof *edge.Weight);
 	if( edge.Weight != NULL ) {
 		edge.Link = link;
 		memcpy(edge.Weight, data, datasize);
@@ -27,7 +27,7 @@ HARBOL_EXPORT bool harbol_edge_clear(struct HarbolEdge *const edge, void dtor(vo
 		dtor((void**)&edge->Weight);
 	
 	if( edge->Weight != NULL )
-		free(edge->Weight), edge->Weight=NULL;
+		harbol_free(edge->Weight), edge->Weight=NULL;
 	edge->Link = -1;
 	return true;
 }
@@ -42,7 +42,7 @@ HARBOL_EXPORT bool harbol_edge_set(struct HarbolEdge *const restrict edge, void 
 	if( datasize==0 )
 		return false;
 	else if( edge->Weight==NULL ) {
-		edge->Weight = calloc(datasize, sizeof *edge->Weight);
+		edge->Weight = harbol_alloc(datasize, sizeof *edge->Weight);
 		return( edge->Weight==NULL ) ? false : memcpy(edge->Weight, data, datasize) != NULL;
 	} else {
 		return memcpy(edge->Weight, data, datasize) != NULL;
@@ -60,7 +60,7 @@ HARBOL_EXPORT bool harbol_edge_set(struct HarbolEdge *const restrict edge, void 
 HARBOL_EXPORT struct HarbolVertex harbol_vertex_create(void *data, size_t datasize)
 {
 	struct HarbolVertex vert = EMPTY_HARBOL_VERT;
-	vert.Data = calloc(datasize, sizeof *vert.Data);
+	vert.Data = harbol_alloc(datasize, sizeof *vert.Data);
 	if( vert.Data != NULL ) {
 		vert.Edges = harbol_vector_create(sizeof(struct HarbolEdge), VEC_DEFAULT_SIZE);
 		memcpy(vert.Data, data, datasize);
@@ -78,7 +78,7 @@ HARBOL_EXPORT bool harbol_vertex_clear(struct HarbolVertex *const vert, void ver
 		vert_dtor((void**)&vert->Data);
 	
 	if( vert->Data != NULL )
-		free(vert->Data), vert->Data=NULL;
+		harbol_free(vert->Data), vert->Data=NULL;
 	return true;
 }
 
@@ -92,7 +92,7 @@ HARBOL_EXPORT bool harbol_vertex_set(struct HarbolVertex *const restrict vert, v
 	if( datasize==0 )
 		return false;
 	else if( vert->Data==NULL ) {
-		vert->Data = calloc(datasize, sizeof *vert->Data);
+		vert->Data = harbol_alloc(datasize, sizeof *vert->Data);
 		return( vert->Data==NULL ) ? false : memcpy(vert->Data, data, datasize) != NULL;
 	} else {
 		return memcpy(vert->Data, data, datasize) != NULL;
@@ -134,7 +134,7 @@ HARBOL_EXPORT bool harbol_vertex_del_edge(struct HarbolVertex *const vert, struc
 
 HARBOL_EXPORT struct HarbolGraph *harbol_graph_new(const size_t vert_datasize, const size_t edge_datasize)
 {
-	struct HarbolGraph *g = calloc(1, sizeof *g);
+	struct HarbolGraph *g = harbol_alloc(1, sizeof *g);
 	if( g != NULL )
 		*g = harbol_graph_create(vert_datasize, edge_datasize);
 	return g;
@@ -163,7 +163,7 @@ HARBOL_EXPORT bool harbol_graph_free(struct HarbolGraph **const gref, void vert_
 		return false;
 	else {
 		const bool res = harbol_graph_clear(*gref, vert_dtor, edge_dtor);
-		free(*gref), *gref=NULL;
+		harbol_free(*gref), *gref=NULL;
 		return res;
 	}
 }

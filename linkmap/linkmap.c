@@ -7,7 +7,7 @@
 
 HARBOL_EXPORT struct HarbolLinkMap *harbol_linkmap_new(const size_t datasize)
 {
-	struct HarbolLinkMap *map = calloc(1, sizeof *map);
+	struct HarbolLinkMap *map = harbol_alloc(1, sizeof *map);
 	if( map != NULL )
 		*map = harbol_linkmap_create(datasize);
 	return map;
@@ -29,7 +29,7 @@ HARBOL_EXPORT bool harbol_linkmap_clear(struct HarbolLinkMap *const map, void dt
 HARBOL_EXPORT bool harbol_linkmap_free(struct HarbolLinkMap **const mapref, void dtor(void**))
 {
 	harbol_linkmap_clear(*mapref, dtor);
-	free(*mapref), *mapref=NULL;
+	harbol_free(*mapref), *mapref=NULL;
 	return true;
 }
 

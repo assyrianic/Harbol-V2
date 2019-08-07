@@ -12,7 +12,7 @@ typedef struct {
 
 HARBOL_EXPORT struct HarbolTuple *harbol_tuple_new(const size_t len, const size_t sizes[const static 1], const bool packed)
 {
-	struct HarbolTuple *tuple = calloc(1, sizeof *tuple);
+	struct HarbolTuple *tuple = harbol_alloc(1, sizeof *tuple);
 	if( tuple != NULL )
 		*tuple = harbol_tuple_create(len, sizes, packed);
 	return tuple;
@@ -48,7 +48,7 @@ HARBOL_EXPORT struct HarbolTuple harbol_tuple_create(const size_t len, const siz
 	
 	// now do a final size alignment with the largest member.
 	const size_t aligned_total = harbol_align_size(total_size, largest_memb >= ptr_size ? ptr_size : largest_memb);
-	tuple.Datum = calloc(packed ? total_size : aligned_total, sizeof *tuple.Datum);
+	tuple.Datum = harbol_alloc(packed ? total_size : aligned_total, sizeof *tuple.Datum);
 	if( tuple.Datum==NULL ) {
 		harbol_vector_clear(&tuple.Fields, NULL);
 		return tuple;
@@ -80,7 +80,7 @@ HARBOL_EXPORT bool harbol_tuple_clear(struct HarbolTuple *const tuple)
 		return false;
 	else {
 		harbol_vector_clear(&tuple->Fields, NULL);
-		free(tuple->Datum), tuple->Datum = NULL;
+		harbol_free(tuple->Datum), tuple->Datum = NULL;
 		tuple->Len = 0;
 		return true;
 	}
@@ -92,7 +92,7 @@ HARBOL_EXPORT bool harbol_tuple_free(struct HarbolTuple **tupleref)
 		return false;
 	else {
 		const bool res = harbol_tuple_clear(*tupleref);
-		free(*tupleref), *tupleref=NULL;
+		harbol_free(*tupleref), *tupleref=NULL;
 		return res;
 	}
 }
