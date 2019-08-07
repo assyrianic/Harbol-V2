@@ -15,41 +15,47 @@
 
 
 #ifdef OS_WINDOWS
+#	ifndef MODULE_LOAD
+#		define MODULE_LOAD(str)   LoadLibrary(str)
+#	endif
 #	ifndef MODULE_GET_FUNC
 #		define MODULE_GET_FUNC    GetProcAddress
 #	endif
 #	ifndef MODULE_CLOSE
-#		define MODULE_CLOSE    FreeLibrary
+#		define MODULE_CLOSE       FreeLibrary
 #	endif
 #else
+#	ifndef MODULE_LOAD
+#		define MODULE_LOAD(str)   dlopen(str, RTLD_NOW | RTLD_GLOBAL)
+#	endif
 #	ifndef MODULE_GET_FUNC
 #		define MODULE_GET_FUNC    dlsym
 #	endif
 #	ifndef MODULE_CLOSE
-#		define MODULE_CLOSE    dlclose
+#		define MODULE_CLOSE       dlclose
 #	endif
 #endif
 
 #ifdef OS_WINDOWS
 #	ifndef DIRECTORY_SEP
-#		define DIRECTORY_SEP "\\"
+#		define DIRECTORY_SEP    "\\"
 #	endif
 #	ifndef LIB_EXT
-#		define LIB_EXT "dll"
+#		define LIB_EXT          "dll"
 #	endif
 #elif defined OS_LINUX_UNIX
 #	ifndef DIRECTORY_SEP
-#		define DIRECTORY_SEP "/"
+#		define DIRECTORY_SEP    "/"
 #	endif
 #	ifndef LIB_EXT
-#		define LIB_EXT "so"
+#		define LIB_EXT          "so"
 #	endif
 #elif defined OS_MAC
 #	ifndef DIRECTORY_SEP
-#		define DIRECTORY_SEP "/"
+#		define DIRECTORY_SEP    "/"
 #	endif
 #	ifndef LIB_EXT
-#		define LIB_EXT "dylib"
+#		define LIB_EXT          "dylib"
 #	endif
 #endif
 
@@ -95,35 +101,27 @@ HARBOL_EXPORT bool harbol_plugin_reload(struct HarbolPlugin *const plugin)
 	if( plugin->LibPath.CStr==NULL )
 		return false;
 	else {
-		if( plugin->SharedObj != NULL ) {
+		if( plugin->SharedObj != NULL )
 			MODULE_CLOSE(plugin->SharedObj), plugin->SharedObj=NULL;
-		}
-#if OS_WINDOWS
-		plugin->SharedObj = LoadLibrary(plugin->LibPath.CStr);
-#else
-		plugin->SharedObj = dlopen(plugin->LibPath.CStr, RTLD_NOW | RTLD_GLOBAL);
-#endif
+		
+		plugin->SharedObj = MODULE_LOAD(plugin->LibPath.CStr);
 		return plugin->SharedObj != NULL;
 	}
 }
 
 /************************************************************************************/
 
-HARBOL_EXPORT struct HarbolPluginMod *harbol_plugin_mod_new(const char dir[restrict static 1], const bool load_plugins, HarbolPluginEvent load_cb)
+HARBOL_EXPORT struct HarbolPluginMod *harbol_plugin_mod_new(const char dir[restrict static 1], void *const restrict userdata, const bool load_plugins, HarbolPluginEvent load_cb)
 {
 	struct HarbolPluginMod *const restrict mod = calloc(1, sizeof *mod);
 	if( mod != NULL )
-		*mod = harbol_plugin_mod_create(dir, load_plugins, load_cb);
+		*mod = harbol_plugin_mod_create(dir, userdata, load_plugins, load_cb);
 	return mod;
 }
 
 static NEVER_NULL(1, 2) void __load_plugin(struct HarbolPluginMod *const restrict mod, tinydir_file *const restrict f, HarbolPluginEvent load_cb)
 {
-#if OS_WINDOWS
-	HarbolDLL dll = LoadLibrary(f->path);
-#else
-	HarbolDLL dll = dlopen(f->path,  RTLD_NOW | RTLD_GLOBAL);
-#endif
+	HarbolDLL dll = MODULE_LOAD(f->path);
 	if( dll==NULL ) {
 #	ifdef OS_WINDOWS
 		fprintf(stderr, "Harbol Plugin Manager Error: **** Unable to load dll: '%s' ****\n", f->name);
@@ -209,13 +207,13 @@ dir_iter_loop:;
 	return mod->Plugins.Vec.Count > 0;
 }
 
-HARBOL_EXPORT struct HarbolPluginMod harbol_plugin_mod_create(const char dir[restrict static 1], const bool load_plugins, HarbolPluginEvent load_cb)
+HARBOL_EXPORT struct HarbolPluginMod harbol_plugin_mod_create(const char dir[restrict static 1], void *const userdata, const bool load_plugins, HarbolPluginEvent load_cb)
 {
-	struct HarbolPluginMod mod = { harbol_linkmap_create(sizeof(struct HarbolPlugin)), harbol_string_create(NULL) };
+	struct HarbolPluginMod mod = { harbol_linkmap_create(sizeof(struct HarbolPlugin)), harbol_string_create(NULL), userdata };
 	
 	// FILENAME_MAX is defined in <stdio.h>
 	char currdir[FILENAME_MAX] = {0};
-#if OS_WINDOWS
+#ifdef OS_WINDOWS
 	if( GetCurrentDir(sizeof currdir, currdir) != 0 )
 #else
 	if( getcwd(currdir, sizeof currdir) != NULL )
@@ -257,15 +255,21 @@ HARBOL_EXPORT struct HarbolPlugin *harbol_plugin_mod_index_get_plugin(const stru
 	return harbol_linkmap_index_get(&mod->Plugins, index);
 }
 
-HARBOL_EXPORT size_t harbol_plugin_mod_plugin_count(const struct HarbolPluginMod *mod)
+HARBOL_EXPORT size_t harbol_plugin_mod_plugin_count(const struct HarbolPluginMod *const mod)
 {
 	return mod->Plugins.Vec.Count;
 }
 
-HARBOL_EXPORT const char *harbol_plugin_mod_get_dir(const struct HarbolPluginMod *mod)
+HARBOL_EXPORT const char *harbol_plugin_mod_get_dir(const struct HarbolPluginMod *const mod)
 {
 	return mod->Dir.CStr;
 }
+
+HARBOL_EXPORT void *harbol_plugin_mod_userdata(const struct HarbolPluginMod *const mod)
+{
+	return mod->UserData;
+}
+
 
 HARBOL_EXPORT bool harbol_plugin_mod_name_load_plugin(struct HarbolPluginMod *const restrict mod, const char plugin_name[restrict static 1], HarbolPluginEvent load_cb)
 {

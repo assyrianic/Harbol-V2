@@ -1636,9 +1636,10 @@ void test_harbol_cfg(void)
 
 
 typedef int32_t __Loader(void);
-static void on_plugin_load(struct HarbolPluginMod *mod, struct HarbolPlugin *const plugin)
+static void on_plugin_load(struct HarbolPluginMod *const mod, struct HarbolPlugin *const plugin)
 {
-	(void)mod;
+	size_t *const restrict plugin_counts = harbol_plugin_mod_userdata(mod);
+	++*plugin_counts;
 	/* no way manager nor the plugin reference would be invalid... */
 	struct HarbolString load_func_name = {NULL,0};
 	harbol_string_format(&load_func_name, "%s_load", harbol_plugin_name(plugin));
@@ -1654,9 +1655,10 @@ static void on_plugin_load(struct HarbolPluginMod *mod, struct HarbolPlugin *con
 }
 
 typedef void __Unloader(void);
-static void on_plugin_unload(struct HarbolPluginMod *mod, struct HarbolPlugin *const plugin)
+static void on_plugin_unload(struct HarbolPluginMod *const mod, struct HarbolPlugin *const plugin)
 {
-	(void)mod;
+	size_t *const restrict plugin_counts = harbol_plugin_mod_userdata(mod);
+	--*plugin_counts;
 	/* no way manager nor the plugin reference would be invalid... */
 	fprintf(g_harbol_debug_stream, "\nplugin mod :: on_plugin_unload - plugin name :: '%s'\n", harbol_plugin_name(plugin));
 	
@@ -1677,8 +1679,9 @@ void test_harbol_plugins(void)
 	if( !g_harbol_debug_stream )
 		return;
 	fputs("plugin mod :: test init.\n", g_harbol_debug_stream);
-	struct HarbolPluginMod pm = harbol_plugin_mod_create("test_harbol_plugins/", true, on_plugin_load);
-	fprintf(g_harbol_debug_stream, "\nplugin mod :: initialization good?: '%s'\n", pm.Plugins.Vec.Count>0 ? "yes" : "no");
+	size_t plugin_counts = 0;
+	struct HarbolPluginMod pm = harbol_plugin_mod_create("test_harbol_plugins/", &plugin_counts, true, on_plugin_load);
+	fprintf(g_harbol_debug_stream, "\nplugin mod :: initialization good?: '%s' | plugins count: %zu\n", pm.Plugins.Vec.Count>0 ? "yes" : "no", plugin_counts);
 	
 	fputs("\nplugin mod :: test deleting plugin by name.\n", g_harbol_debug_stream);
 	harbol_plugin_mod_name_del_plugin(&pm, "test_plugin", on_plugin_unload);
@@ -1688,6 +1691,7 @@ void test_harbol_plugins(void)
 	
 	fputs("\nplugin mod :: test destruction.\n", g_harbol_debug_stream);
 	harbol_plugin_mod_clear(&pm, on_plugin_unload);
+	fprintf(g_harbol_debug_stream, "\nplugin mod :: plugins count: %zu\n", plugin_counts);
 }
 
 

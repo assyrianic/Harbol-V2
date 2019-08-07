@@ -20,9 +20,8 @@ HARBOL_EXPORT struct HarbolTuple *harbol_tuple_new(const size_t len, const size_
 
 HARBOL_EXPORT struct HarbolTuple harbol_tuple_create(const size_t len, const size_t sizes[const static 1], const bool packed)
 {
-	struct HarbolTuple tuple = {harbol_vector_create(sizeof(TupleElem_t), 4), NULL, 0, false};
+	struct HarbolTuple tuple = {harbol_vector_create(sizeof(TupleElem_t), 4), NULL, 0, packed};
 	
-	tuple.Packed = packed;
 	const size_t ptr_size = sizeof(intptr_t);
 	size_t largest_memb = 0;
 	

@@ -127,6 +127,26 @@ typedef struct { const char *cstr; const size_t len; } string_t;
 #endif
 
 
+static inline void *harbol_alloc(const size_t num, const size_t size)
+{
+	return calloc(num, size);
+}
+
+static inline void *harbol_realloc(void *const ptr, const size_t num, const size_t size)
+{
+	return realloc(ptr, num * size);
+}
+
+static inline void harbol_free(void *const ptr)
+{
+	free(ptr);
+}
+
+static inline void harbol_clean(void **const ptr)
+{
+	free(*ptr), *ptr = NULL;
+}
+
 static inline bool harbol_generic_vector_resizer(void *const vec, const size_t new_size, const size_t element_size)
 {
 	struct {

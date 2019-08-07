@@ -289,10 +289,15 @@ HARBOL_EXPORT bool harbol_string_reverse(struct HarbolString *const string)
 		return false;
 	else {
 		char *buf = string->CStr;
-		for( uindex_t i=0, n=string->Len-1; i<string->Len/2; i++, n-- ) {
-			const char c = buf[n];
-			buf[n] = buf[i];
-			buf[i] = c;
+		const size_t len = string->Len / 2;
+		for( uindex_t i=0, n=string->Len-1; i<len; i++, n-- ) {
+			if( buf[n]==buf[i] )
+				continue;
+			else {
+				buf[n] ^= buf[i];
+				buf[i] ^= buf[n];
+				buf[n] ^= buf[i];
+			}
 		}
 		return true;
 	}
