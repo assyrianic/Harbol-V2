@@ -25,6 +25,13 @@
 * Fixed Size floating-point types.
 * Vector-based Double Ended Queue (Veque!).
 
+### Future/Planned Features
+- [ ] Red-Black Tree.
+- [ ] AVL Tree?
+- [ ] C Interpreter.
+- [ ] General Purpose Virtual Machine.
+- [ ] General Purpose JIT Compiler.
+
 
 ## Usage
 
