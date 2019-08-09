@@ -1603,7 +1603,7 @@ void test_harbol_cfg(void)
 			fprintf(g_harbol_debug_stream, "root.colors: '[%u, %u, %u, %u]'\n", color->Bytes.R, color->Bytes.G, color->Bytes.B, color->Bytes.A);
 		
 		fputs("\ncfg :: test override setting an existing key-value from null to a string type.\n", g_harbol_debug_stream);
-		harbol_cfg_set_str(larger_cfg, "root.spouse", "Jane Smith", true);
+		harbol_cfg_set_cstr(larger_cfg, "root.spouse", "Jane Smith", true);
 		{
 			struct HarbolString stringcfg = harbol_cfg_to_str(larger_cfg);
 			fprintf(g_harbol_debug_stream, "\nadded spouse!: \n%s\n", stringcfg.CStr);

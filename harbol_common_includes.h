@@ -21,9 +21,6 @@
 #		ifndef HARBOL64
 #			define HARBOL64
 #		endif
-#		ifndef HARBOL32
-#			define HARBOL32
-#		endif
 #	endif
 #endif
 
@@ -79,6 +76,7 @@ typedef struct { const char *cstr; const size_t len; } string_t;
 	_Static_assert(sizeof(float32_t) * CHAR_BIT == 32, "Unexpected `float32_t` size");
 #endif
 
+
 #ifndef __float64_t_defined
 #	if DBL_MANT_DIG==53
 #		define __float64_t_defined
@@ -104,6 +102,27 @@ typedef struct { const char *cstr; const size_t len; } string_t;
 #ifdef C11
 	_Static_assert(sizeof(float64_t) * CHAR_BIT == 64, "Unexpected `float64_t` size");
 #endif
+
+
+#ifndef __floatptr_t_defined
+#	define PRIfPTR    "f"
+#	if defined(HARBOL64)
+#		define __floatptr_t_defined
+#		define strtofptr  strtod
+		typedef float64_t floatptr_t;
+#	elif defined(HARBOL32)
+#		define __floatptr_t_defined
+#		define strtofptr  strtof
+		typedef float32_t floatptr_t;
+#	else
+#		error "no appropriate floatptr implementation"
+#	endif
+#endif
+
+#ifdef C11
+	_Static_assert(sizeof(floatptr_t) * CHAR_BIT == sizeof(intptr_t), "Unexpected `floatptr_t` size");
+#endif
+
 
 #ifndef __floatmax_t_defined
 #	if LDBL_MANT_DIG > DBL_MANT_DIG
@@ -223,66 +242,59 @@ static inline size_t harbol_align_size(const size_t size, const size_t align)
 	return (size + (align-1)) & -align;
 }
 
+
+// these are NOT cryptographic hashes.
+// use ONLY FOR HASH TABLE IMPLEMENTATIONS.
 static inline NO_NULL size_t string_hash(const char key[static 1])
 {
-	const size_t hash_constant = 37; // 97, 33
+	// some hashing constants.
+	// 37, 97, 33
+	// using 37 because it brings better distribution with bitshift at return.
+	const size_t hash_constant = 37;
 	size_t h = 0;
 	while( *key != '\0' )
 		h = hash_constant * h + *key++;
-	return h;
+	return h >> 1;
 }
 
-static inline uint32_t int32_hash(uint32_t a)
+static inline size_t int_hash(size_t a)
 {
-	a = (a+0x7ed55d16) + (a<<12);
-	a = (a^0xc761c23c) ^ (a>>19);
-	a = (a+0x165667b1) + (a<<5);
-	a = (a+0xd3a2646c) ^ (a<<9);
-	a = (a+0xfd7046c5) + (a<<3);
-	a = (a^0xb55a4f09) ^ (a>>16);
-	return a;
+	return (((a ^ (a>>4)) ^ 0xdeadbeef) + ((a ^ (a>>4))<<5)) ^ ((a>>11) * 37);
 }
 
-static inline uint64_t int64_hash(uint64_t a)
+static inline size_t float_hash(const floatptr_t a)
 {
-	a = (~a) + (a << 21);
-	a = a ^ (a >> 24);
-	a = (a + (a << 3)) + (a << 8);
-	a = a ^ (a >> 14);
-	a = (a + (a << 2)) + (a << 4);
-	a = a ^ (a >> 28);
-	a = a + (a << 31);
-	return a;
-}
-
-static inline size_t int_hash(const size_t a)
-{
-	switch( sizeof a ) {
-		case 4: return int32_hash(a);
-		case 8: return int64_hash(a);
-		default: return 0;
-	}
+	union {
+		const floatptr_t f;
+		const size_t s;
+	} c = {a};
+	return int_hash(c.s);
 }
 
 static inline NO_NULL size_t ptr_hash(const void *const p)
 {
-	const size_t y = (size_t)p;
-	return (y >> 4u) | (y << (8u * sizeof(void*) - 4u));
+	union {
+		const void *const p;
+		const size_t y;
+	} c = {p};
+	return (c.y >> 4u) | (c.y << (8u * sizeof(void*) - 4u));
 }
 
-static inline NO_NULL size_t jenkins_one_at_a_time_hash(const char key[static 1], const size_t len)
-{
-	size_t hash = 0;
-	for( uindex_t i=0; i<len; i++ ) {
-		hash += key[i];
-		hash += hash << 10;
-		hash ^= hash >> 6;
-	}
-	hash += hash << 3;
-	hash ^= hash >> 11;
-	hash += hash << 15;
-	return hash;
-}
+#ifdef C11
+#	define harbol_hash(h)   _Generic((h)+0, \
+								int : int_hash, \
+								size_t : int_hash, \
+								int64_t : int_hash, \
+								uint64_t : int_hash, \
+								float32_t : float_hash, \
+								float64_t : float_hash, \
+								floatptr_t : float_hash, \
+								char* : string_hash, \
+								const char* : string_hash, \
+								default: ptr_hash) \
+							((h))
+#endif
+
 
 static inline NO_NULL ssize_t get_file_size(FILE *const file)
 {
@@ -296,6 +308,29 @@ static inline NO_NULL ssize_t get_file_size(FILE *const file)
 	}
 }
 
+// Binary Iterator Union.
+// for "struct/union" types, cast from the 'Void' alias.
+union HarbolBinIter {
+	bool *restrict Bool;
+	
+	uint8_t *restrict UInt8; int8_t *restrict Int8;
+	uint16_t *restrict UInt16; int16_t *restrict Int16;
+	uint32_t *restrict UInt32; int32_t *restrict Int32;
+	uint64_t *restrict UInt64; int64_t *restrict Int64;
+	size_t *restrict Size; ssize_t *restrict SSize;
+	uintptr_t *restrict UIntPtr; intptr_t *restrict IntPtr;
+	
+	float32_t *restrict Float32;
+	float64_t *restrict Float64;
+	floatptr_t *restrict FloatPtr;
+	floatmax_t *restrict FloatMax;
+	
+	char *restrict String;
+	
+	void *restrict Void;
+	union HarbolBinIter *restrict Self;
+};
+
 static inline NO_NULL uint8_t *make_buffer_from_binary(const char file_name[restrict static 1])
 {
 	FILE *restrict file = fopen(file_name, "rb");
@@ -308,6 +343,30 @@ static inline NO_NULL uint8_t *make_buffer_from_binary(const char file_name[rest
 			return NULL;
 		} else {
 			uint8_t *restrict stream = harbol_alloc(filesize, sizeof *stream);
+			const size_t bytes_read = fread(stream, sizeof *stream, filesize, file);
+			fclose(file), file=NULL;
+			
+			if( bytes_read != (size_t)filesize ) {
+				harbol_free(stream), stream=NULL;
+				return NULL;
+			}
+			else return stream;
+		}
+	}
+}
+
+static inline NO_NULL char *make_buffer_from_text(const char file_name[restrict static 1])
+{
+	FILE *restrict file = fopen(file_name, "r");
+	if( file==NULL )
+		return NULL;
+	else {
+		const ssize_t filesize = get_file_size(file);
+		if( filesize<=0 ) {
+			fclose(file);
+			return NULL;
+		} else {
+			char *restrict stream = harbol_alloc(filesize, sizeof *stream);
 			const size_t bytes_read = fread(stream, sizeof *stream, filesize, file);
 			fclose(file), file=NULL;
 			

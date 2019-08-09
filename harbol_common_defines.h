@@ -283,4 +283,10 @@
 #endif
 
 
+#ifdef C11
+#	ifndef harbol_is_type
+#		define harbol_is_type(n, T)    _Generic((n), T:true, default:false)
+#	endif
+#endif
+
 #endif /* HARBOL_COMMON_DEFINES_INCLUDED */

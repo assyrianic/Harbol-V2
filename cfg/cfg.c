@@ -684,8 +684,12 @@ HARBOL_EXPORT enum HarbolCfgType harbol_cfg_get_type(struct HarbolLinkMap *const
 	return( var==NULL ) ? -1 : var->Type;
 }
 
+HARBOL_EXPORT bool harbol_cfg_set_str(struct HarbolLinkMap *const restrict cfgmap, const char keypath[restrict static 1], const struct HarbolString str, const bool override_convert)
+{
+	return harbol_cfg_set_cstr(cfgmap, keypath, str.CStr, override_convert);
+}
 
-HARBOL_EXPORT bool harbol_cfg_set_str(struct HarbolLinkMap *const restrict cfgmap, const char key[restrict static 1], const char cstr[restrict static 1], const bool override_convert)
+HARBOL_EXPORT bool harbol_cfg_set_cstr(struct HarbolLinkMap *const restrict cfgmap, const char key[restrict static 1], const char cstr[restrict static 1], const bool override_convert)
 {
 	struct HarbolVariant *const restrict var = __get_var(cfgmap, key);
 	if( var==NULL )

@@ -47,13 +47,32 @@ HARBOL_EXPORT NO_NULL union HarbolColor *harbol_cfg_get_color(struct HarbolLinkM
 HARBOL_EXPORT NO_NULL struct HarbolVec4D *harbol_cfg_get_vec4D(struct HarbolLinkMap *cfg, const char keypath[]);
 HARBOL_EXPORT NO_NULL enum HarbolCfgType harbol_cfg_get_type(struct HarbolLinkMap *cfg, const char keypath[]);
 
-HARBOL_EXPORT NO_NULL bool harbol_cfg_set_str(struct HarbolLinkMap *cfg, const char keypath[], const char cstr[], bool override_convert);
+HARBOL_EXPORT NO_NULL bool harbol_cfg_set_str(struct HarbolLinkMap *cfg, const char keypath[], struct HarbolString str, bool override_convert);
+HARBOL_EXPORT NO_NULL bool harbol_cfg_set_cstr(struct HarbolLinkMap *cfg, const char keypath[], const char cstr[], bool override_convert);
 HARBOL_EXPORT NO_NULL bool harbol_cfg_set_float(struct HarbolLinkMap *cfg, const char keypath[], floatmax_t fltval, bool override_convert);
 HARBOL_EXPORT NO_NULL bool harbol_cfg_set_int(struct HarbolLinkMap *cfg, const char keypath[], intmax_t ival, bool override_convert);
 HARBOL_EXPORT NO_NULL bool harbol_cfg_set_bool(struct HarbolLinkMap *cfg, const char keypath[], bool boolval, bool override_convert);
 HARBOL_EXPORT NO_NULL bool harbol_cfg_set_color(struct HarbolLinkMap *cfg, const char keypath[], union HarbolColor color, bool override_convert);
 HARBOL_EXPORT NO_NULL bool harbol_cfg_set_vec4D(struct HarbolLinkMap *cfg, const char keypath[], struct HarbolVec4D vec4d, bool override_convert);
 HARBOL_EXPORT NO_NULL bool harbol_cfg_set_to_null(struct HarbolLinkMap *cfg, const char keypath[]);
+
+#ifdef C11
+#	define harbol_cfg_set(cfg, keypath, val, override)  _Generic((val)+0, \
+															struct HarbolString : harbol_cfg_set_str, \
+															char* : harbol_cfg_set_cstr, \
+															const char* : harbol_cfg_set_cstr, \
+															float32_t : harbol_cfg_set_float, \
+															float64_t : harbol_cfg_set_float, \
+															floatmax_t : harbol_cfg_set_float, \
+															int32_t : harbol_cfg_set_int, \
+															uint32_t : harbol_cfg_set_int, \
+															int64_t : harbol_cfg_set_int, \
+															intmax_t : harbol_cfg_set_int, \
+															bool : harbol_cfg_set_bool, \
+															union HarbolColor : harbol_cfg_set_color, \
+															struct HarbolVec4D : harbol_cfg_set_vec4D) \
+														((cfg), (keypath), (val), (override))
+#endif
 
 HARBOL_EXPORT NO_NULL bool harbol_cfg_build_file(const struct HarbolLinkMap *cfg, const char filename[], bool overwrite);
 /********************************************************************/

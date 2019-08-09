@@ -246,7 +246,7 @@ HARBOL_EXPORT bool harbol_string_replace(struct HarbolString *const string, cons
 	}
 }
 
-HARBOL_EXPORT size_t harbol_string_count(struct HarbolString *const string, const char occurrence)
+HARBOL_EXPORT size_t harbol_string_count(const struct HarbolString *const string, const char occurrence)
 {
 	if( string->CStr==NULL )
 		return 0;
