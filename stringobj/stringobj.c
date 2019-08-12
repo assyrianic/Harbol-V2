@@ -8,7 +8,7 @@
 
 static NO_NULL bool __harbol_resize_string(struct HarbolString *const string, const size_t new_size)
 {
-	const size_t old_size = string->Len;
+	const size_t old_size = string->len;
 	// check if we're reducing or increasing memory.
 	// as realloc is exponentially faster when we're reducing memory.
 	const bool increasing_mem = (old_size <= new_size);
@@ -17,21 +17,21 @@ static NO_NULL bool __harbol_resize_string(struct HarbolString *const string, co
 		if( newstr==NULL )
 			return false;
 		else {
-			string->Len = new_size;
-			if( string->CStr != NULL ) {
-				memcpy(newstr, string->CStr, old_size);
-				harbol_free(string->CStr), string->CStr=NULL;
+			string->len = new_size;
+			if( string->cstr != NULL ) {
+				memcpy(newstr, string->cstr, old_size);
+				harbol_free(string->cstr), string->cstr=NULL;
 			}
-			string->CStr = newstr;
+			string->cstr = newstr;
 			return true;
 		}
 	} else {
-		string->CStr = harbol_realloc(string->CStr, new_size * sizeof *string->CStr + 1);
-		if( string->CStr==NULL )
+		string->cstr = harbol_realloc(string->cstr, new_size * sizeof *string->cstr + 1);
+		if( string->cstr==NULL )
 			return false;
 		else {
-			string->Len = new_size;
-			string->CStr[string->Len] = '\0';
+			string->len = new_size;
+			string->cstr[string->len] = '\0';
 			return true;
 		}
 	}
@@ -55,8 +55,8 @@ HARBOL_EXPORT struct HarbolString harbol_string_create(const char cstr[restrict]
 
 HARBOL_EXPORT bool harbol_string_clear(struct HarbolString *const string)
 {
-	if( string->CStr != NULL )
-		harbol_free(string->CStr), string->CStr=NULL;
+	if( string->cstr != NULL )
+		harbol_free(string->cstr), string->cstr=NULL;
 	*string = (struct HarbolString)EMPTY_HARBOL_STRING;
 	return true;
 }
@@ -74,25 +74,25 @@ HARBOL_EXPORT bool harbol_string_free(struct HarbolString **const stringref)
 
 HARBOL_EXPORT bool harbol_string_add_char(struct HarbolString *const string, const char c)
 {
-	const bool resize_res = __harbol_resize_string(string, string->Len + 1);
+	const bool resize_res = __harbol_resize_string(string, string->len + 1);
 	if( !resize_res )
 		return false;
 	else {
-		string->CStr[string->Len-1] = c;
+		string->cstr[string->len-1] = c;
 		return true;
 	}
 }
 
 HARBOL_EXPORT bool harbol_string_add_str(struct HarbolString *const stringA, const struct HarbolString *const stringB)
 {
-	if( stringB->CStr==NULL )
+	if( stringB->cstr==NULL )
 		return false;
 	else {
-		const bool resize_res = __harbol_resize_string(stringA, stringA->Len + stringB->Len);
+		const bool resize_res = __harbol_resize_string(stringA, stringA->len + stringB->len);
 		if( !resize_res )
 			return false;
 		else {
-			strncat(stringA->CStr, stringB->CStr, stringB->Len);
+			strncat(stringA->cstr, stringB->cstr, stringB->len);
 			return true;
 		}
 	}
@@ -104,11 +104,11 @@ HARBOL_EXPORT bool harbol_string_add_cstr(struct HarbolString *const restrict st
 		return false;
 	else {
 		const size_t cstr_len = strlen(cstr);
-		const bool resize_res = __harbol_resize_string(string, string->Len + cstr_len);
+		const bool resize_res = __harbol_resize_string(string, string->len + cstr_len);
 		if( !resize_res )
 			return false;
 		else {
-			strncat(string->CStr, cstr, cstr_len);
+			strncat(string->cstr, cstr, cstr_len);
 			return true;
 		}
 	}
@@ -116,26 +116,26 @@ HARBOL_EXPORT bool harbol_string_add_cstr(struct HarbolString *const restrict st
 
 HARBOL_EXPORT inline char *harbol_string_cstr(const struct HarbolString *const string)
 {
-	return string->CStr;
+	return string->cstr;
 }
 
 HARBOL_EXPORT inline size_t harbol_string_len(const struct HarbolString *const string)
 {
-	return string->Len;
+	return string->len;
 }
 
 HARBOL_EXPORT bool harbol_string_copy_str(struct HarbolString *const stringA, const struct HarbolString *const stringB)
 {
-	if( stringB->CStr==NULL )
+	if( stringB->cstr==NULL )
 		return false;
 	else if( stringA==stringB )
 		return true;
 	else {
-		const bool resize_res = __harbol_resize_string(stringA, stringB->Len);
+		const bool resize_res = __harbol_resize_string(stringA, stringB->len);
 		if( !resize_res )
 			return false;
 		else {
-			strncpy(stringA->CStr, stringB->CStr, stringB->Len);
+			strncpy(stringA->cstr, stringB->cstr, stringB->len);
 			return true;
 		}
 	}
@@ -151,7 +151,7 @@ HARBOL_EXPORT bool harbol_string_copy_cstr(struct HarbolString *const restrict s
 		if( !resize_res )
 			return false;
 		else {
-			strncpy(string->CStr, cstr, string->Len);
+			strncpy(string->cstr, cstr, string->len);
 			return true;
 		}
 	}
@@ -176,7 +176,7 @@ HARBOL_EXPORT int32_t harbol_string_format(struct HarbolString *const restrict s
 		return -1;
 	} else {
 		/* vsnprintf always checks n-1 so gotta increase len a bit to accomodate. */
-		const int32_t result = vsnprintf(string->CStr, string->Len+1, fmt, st);
+		const int32_t result = vsnprintf(string->cstr, string->len+1, fmt, st);
 		va_end(st);
 		return result;
 	}
@@ -191,13 +191,13 @@ HARBOL_EXPORT int32_t harbol_string_add_format(struct HarbolString *const restri
 	const int32_t size = vsnprintf(&c, 1, fmt, ap);
 	va_end(ap);
 	
-	const size_t old_size = string->Len;
+	const size_t old_size = string->len;
 	const bool resize_res = __harbol_resize_string(string, size + old_size);
 	if( !resize_res ) {
 		va_end(st);
 		return -1;
 	} else {
-		const int32_t result = vsnprintf(&string->CStr[old_size], string->Len-old_size+1, fmt, st);
+		const int32_t result = vsnprintf(&string->cstr[old_size], string->len-old_size+1, fmt, st);
 		va_end(st);
 		return result;
 	}
@@ -205,17 +205,17 @@ HARBOL_EXPORT int32_t harbol_string_add_format(struct HarbolString *const restri
 
 HARBOL_EXPORT int32_t harbol_string_cmpcstr(const struct HarbolString *const restrict string, const char cstr[restrict])
 {
-	return( cstr==NULL || string->CStr==NULL ) ? -1 : strncmp(cstr, string->CStr, string->Len);
+	return( cstr==NULL || string->cstr==NULL ) ? -1 : strncmp(cstr, string->cstr, string->len);
 }
 
 HARBOL_EXPORT int32_t harbol_string_cmpstr(const struct HarbolString *const restrict stringA, const struct HarbolString *const restrict stringB)
 {
-	return( stringA->CStr==NULL || stringB->CStr==NULL ) ? -1 : strncmp(stringA->CStr, stringB->CStr, stringB->Len);
+	return( stringA->cstr==NULL || stringB->cstr==NULL ) ? -1 : strncmp(stringA->cstr, stringB->cstr, stringB->len);
 }
 
 HARBOL_EXPORT bool harbol_string_is_empty(const struct HarbolString *const string)
 {
-	return( string->CStr==NULL || string->Len==0 || string->CStr[0]==0 );
+	return( string->cstr==NULL || string->len==0 || string->cstr[0]==0 );
 }
 
 HARBOL_EXPORT bool harbol_string_read_file(struct HarbolString *const string, FILE *const file)
@@ -228,7 +228,7 @@ HARBOL_EXPORT bool harbol_string_read_file(struct HarbolString *const string, FI
 		if( !resize_res )
 			return false;
 		else {
-			string->Len = fread(string->CStr, sizeof *string->CStr, filesize, file);
+			string->len = fread(string->cstr, sizeof *string->cstr, filesize, file);
 			return true;
 		}
 	}
@@ -236,10 +236,10 @@ HARBOL_EXPORT bool harbol_string_read_file(struct HarbolString *const string, FI
 
 HARBOL_EXPORT bool harbol_string_replace(struct HarbolString *const string, const char to_replace, const char with)
 {
-	if( string->CStr==NULL || to_replace==0 || with==0 )
+	if( string->cstr==NULL || to_replace==0 || with==0 )
 		return false;
 	else {
-		for( char *i=string->CStr; *i; i++ )
+		for( char *i=string->cstr; *i; i++ )
 			if( *i==to_replace )
 				*i = with;
 		return true;
@@ -248,11 +248,11 @@ HARBOL_EXPORT bool harbol_string_replace(struct HarbolString *const string, cons
 
 HARBOL_EXPORT size_t harbol_string_count(const struct HarbolString *const string, const char occurrence)
 {
-	if( string->CStr==NULL )
+	if( string->cstr==NULL )
 		return 0;
 	else {
 		size_t counts = 0;
-		for( char *i=string->CStr; *i; i++ )
+		for( char *i=string->cstr; *i; i++ )
 			if( *i==occurrence )
 				++counts;
 		return counts;
@@ -261,10 +261,10 @@ HARBOL_EXPORT size_t harbol_string_count(const struct HarbolString *const string
 
 HARBOL_EXPORT bool harbol_string_upper(struct HarbolString *const string)
 {
-	if( string->CStr==NULL )
+	if( string->cstr==NULL )
 		return false;
 	else {
-		for( char *i=string->CStr; *i; i++ )
+		for( char *i=string->cstr; *i; i++ )
 			if( islower(*i) )
 				*i=toupper(*i);
 		return true;
@@ -273,10 +273,10 @@ HARBOL_EXPORT bool harbol_string_upper(struct HarbolString *const string)
 
 HARBOL_EXPORT bool harbol_string_lower(struct HarbolString *const string)
 {
-	if( string->CStr==NULL )
+	if( string->cstr==NULL )
 		return false;
 	else {
-		for( char *i=string->CStr; *i; i++ )
+		for( char *i=string->cstr; *i; i++ )
 			if( isupper(*i) )
 				*i=tolower(*i);
 		return true;
@@ -285,12 +285,12 @@ HARBOL_EXPORT bool harbol_string_lower(struct HarbolString *const string)
 
 HARBOL_EXPORT bool harbol_string_reverse(struct HarbolString *const string)
 {
-	if( string->CStr==NULL )
+	if( string->cstr==NULL )
 		return false;
 	else {
-		char *buf = string->CStr;
-		const size_t len = string->Len / 2;
-		for( uindex_t i=0, n=string->Len-1; i<len; i++, n-- ) {
+		char *buf = string->cstr;
+		const size_t len = string->len / 2;
+		for( uindex_t i=0, n=string->len-1; i<len; i++, n-- ) {
 			if( buf[n]==buf[i] )
 				continue;
 			else {

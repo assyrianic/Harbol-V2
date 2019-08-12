@@ -68,44 +68,44 @@ HARBOL_EXPORT struct HarbolPlugin harbol_plugin_create(HarbolDLL module, const c
 
 HARBOL_EXPORT bool harbol_plugin_clear(struct HarbolPlugin *const plugin)
 {
-	if( plugin->SharedObj != NULL )
-		MODULE_CLOSE(plugin->SharedObj), plugin->SharedObj=NULL;
+	if( plugin->dll != NULL )
+		MODULE_CLOSE(plugin->dll), plugin->dll=NULL;
 	
-	harbol_string_clear(&plugin->LibPath);
-	plugin->Name = NULL;
+	harbol_string_clear(&plugin->path);
+	plugin->name = NULL;
 	return true;
 }
 
 HARBOL_EXPORT HarbolDLL harbol_plugin_shared_obj(const struct HarbolPlugin *const plugin)
 {
-	return plugin->SharedObj;
+	return plugin->dll;
 }
 
 HARBOL_EXPORT const char *harbol_plugin_name(const struct HarbolPlugin *const plugin)
 {
-	return( plugin->Name==NULL ) ? NULL : plugin->Name->CStr;
+	return( plugin->name==NULL ) ? NULL : plugin->name->cstr;
 }
 
 HARBOL_EXPORT const char *harbol_plugin_path(const struct HarbolPlugin *plugin)
 {
-	return plugin->LibPath.CStr;
+	return plugin->path.cstr;
 }
 
 HARBOL_EXPORT void *harbol_plugin_sym(const struct HarbolPlugin *const restrict plugin, const char sym_name[restrict static 1])
 {
-	return( plugin->SharedObj==NULL ) ? NULL : (void *)(uintptr_t)MODULE_GET_FUNC(plugin->SharedObj, sym_name);
+	return( plugin->dll==NULL ) ? NULL : (void *)(uintptr_t)MODULE_GET_FUNC(plugin->dll, sym_name);
 }
 
 HARBOL_EXPORT bool harbol_plugin_reload(struct HarbolPlugin *const plugin)
 {
-	if( plugin->LibPath.CStr==NULL )
+	if( plugin->path.cstr==NULL )
 		return false;
 	else {
-		if( plugin->SharedObj != NULL )
-			MODULE_CLOSE(plugin->SharedObj), plugin->SharedObj=NULL;
+		if( plugin->dll != NULL )
+			MODULE_CLOSE(plugin->dll), plugin->dll=NULL;
 		
-		plugin->SharedObj = MODULE_LOAD(plugin->LibPath.CStr);
-		return plugin->SharedObj != NULL;
+		plugin->dll = MODULE_LOAD(plugin->path.cstr);
+		return plugin->dll != NULL;
 	}
 }
 
@@ -134,11 +134,11 @@ static NEVER_NULL(1, 2) void __load_plugin(struct HarbolPluginMod *const restric
 		if( ext_dot != NULL )
 			*ext_dot = 0;
 		
-		const bool res = harbol_linkmap_insert(&mod->Plugins, f->name, &plugin);
+		const bool res = harbol_linkmap_insert(&mod->plugins, f->name, &plugin);
 		if( res ) {
-			struct HarbolKeyVal *const kv = harbol_linkmap_key_get_kv(&mod->Plugins, f->name);
-			struct HarbolPlugin *pl = harbol_linkmap_key_get(&mod->Plugins, f->name);
-			pl->Name = &kv->Key;
+			struct HarbolKeyVal *const kv = harbol_linkmap_key_get_kv(&mod->plugins, f->name);
+			struct HarbolPlugin *pl = harbol_linkmap_key_get(&mod->plugins, f->name);
+			pl->name = &kv->key;
 			if( load_cb != NULL )
 				load_cb(mod, pl);
 		} else {
@@ -172,7 +172,7 @@ dir_iter_loop:;
 			break;
 	}
 	tinydir_close(dir);
-	return mod->Plugins.Vec.Count > 0;
+	return mod->plugins.vec.count > 0;
 }
 
 static NEVER_NULL(1, 2, 3) bool __recursive_scan_by_name(struct HarbolPluginMod *const restrict mod, tinydir_dir *const restrict dir, const char plugin_name[restrict static 1], HarbolPluginEvent load_cb)
@@ -204,7 +204,7 @@ dir_iter_loop:;
 			break;
 	}
 	tinydir_close(dir);
-	return mod->Plugins.Vec.Count > 0;
+	return mod->plugins.vec.count > 0;
 }
 
 HARBOL_EXPORT struct HarbolPluginMod harbol_plugin_mod_create(const char dir[restrict static 1], void *const userdata, const bool load_plugins, HarbolPluginEvent load_cb)
@@ -219,7 +219,7 @@ HARBOL_EXPORT struct HarbolPluginMod harbol_plugin_mod_create(const char dir[res
 	if( getcwd(currdir, sizeof currdir) != NULL )
 #endif
 	{
-		harbol_string_format(&mod.Dir, "%s%s%s", currdir, DIRECTORY_SEP, dir);
+		harbol_string_format(&mod.dir, "%s%s%s", currdir, DIRECTORY_SEP, dir);
 		if( load_plugins )
 			harbol_plugin_mod_load_plugins(&mod, load_cb);
 		return mod;
@@ -230,7 +230,7 @@ HARBOL_EXPORT struct HarbolPluginMod harbol_plugin_mod_create(const char dir[res
 HARBOL_EXPORT bool harbol_plugin_mod_clear(struct HarbolPluginMod *const mod, HarbolPluginEvent unload_cb)
 {
 	harbol_plugin_mod_unload_plugins(mod, unload_cb);
-	harbol_string_clear(&mod->Dir);
+	harbol_string_clear(&mod->dir);
 	return true;
 }
 
@@ -247,36 +247,36 @@ HARBOL_EXPORT bool harbol_plugin_mod_free(struct HarbolPluginMod **const manager
 
 HARBOL_EXPORT struct HarbolPlugin *harbol_plugin_mod_name_get_plugin(const struct HarbolPluginMod *const restrict mod, const char plugin_name[restrict static 1])
 {
-	return harbol_linkmap_key_get(&mod->Plugins, plugin_name);
+	return harbol_linkmap_key_get(&mod->plugins, plugin_name);
 }
 
 HARBOL_EXPORT struct HarbolPlugin *harbol_plugin_mod_index_get_plugin(const struct HarbolPluginMod *const mod, const uindex_t index)
 {
-	return harbol_linkmap_index_get(&mod->Plugins, index);
+	return harbol_linkmap_index_get(&mod->plugins, index);
 }
 
 HARBOL_EXPORT size_t harbol_plugin_mod_plugin_count(const struct HarbolPluginMod *const mod)
 {
-	return mod->Plugins.Vec.Count;
+	return mod->plugins.vec.count;
 }
 
 HARBOL_EXPORT const char *harbol_plugin_mod_get_dir(const struct HarbolPluginMod *const mod)
 {
-	return mod->Dir.CStr;
+	return mod->dir.cstr;
 }
 
 HARBOL_EXPORT void *harbol_plugin_mod_userdata(const struct HarbolPluginMod *const mod)
 {
-	return mod->UserData;
+	return mod->userdata;
 }
 
 
 HARBOL_EXPORT bool harbol_plugin_mod_name_load_plugin(struct HarbolPluginMod *const restrict mod, const char plugin_name[restrict static 1], HarbolPluginEvent load_cb)
 {
 	tinydir_dir dir;
-	if( tinydir_open(&dir, mod->Dir.CStr)<0 ) {
-		fprintf(stderr, "Harbol Plugin Manager Error: **** Unable to Open Dir: '%s' ****\n", mod->Dir.CStr);
-		harbol_string_clear(&mod->Dir);
+	if( tinydir_open(&dir, mod->dir.cstr)<0 ) {
+		fprintf(stderr, "Harbol Plugin Manager Error: **** Unable to Open dir: '%s' ****\n", mod->dir.cstr);
+		harbol_string_clear(&mod->dir);
 		tinydir_close(&dir);
 		return false;
 	}
@@ -292,21 +292,21 @@ HARBOL_EXPORT bool harbol_plugin_mod_name_del_plugin(struct HarbolPluginMod *con
 		if( unload_cb != NULL )
 			unload_cb(mod, plugin);
 		harbol_plugin_clear(plugin);
-		harbol_linkmap_key_del(&mod->Plugins, plugin_name, NULL);
+		harbol_linkmap_key_del(&mod->plugins, plugin_name, NULL);
 		return true;
 	}
 }
 
 HARBOL_EXPORT bool harbol_plugin_mod_index_del_plugin(struct HarbolPluginMod *const mod, const uindex_t index, HarbolPluginEvent unload_cb)
 {
-	struct HarbolPlugin *plugin = harbol_linkmap_index_get(&mod->Plugins, index);
+	struct HarbolPlugin *plugin = harbol_linkmap_index_get(&mod->plugins, index);
 	if( plugin==NULL ) {
 		return false;
 	} else {
 		if( unload_cb != NULL )
 			unload_cb(mod, plugin);
 		harbol_plugin_clear(plugin);
-		harbol_linkmap_index_del(&mod->Plugins, index, NULL);
+		harbol_linkmap_index_del(&mod->plugins, index, NULL);
 		return true;
 	}
 }
@@ -314,9 +314,9 @@ HARBOL_EXPORT bool harbol_plugin_mod_index_del_plugin(struct HarbolPluginMod *co
 HARBOL_EXPORT bool harbol_plugin_mod_load_plugins(struct HarbolPluginMod *const mod, HarbolPluginEvent load_cb)
 {
 	tinydir_dir dir;
-	if( tinydir_open(&dir, mod->Dir.CStr)<0 ) {
-		fprintf(stderr, "Harbol Plugin Manager Error: **** Unable to Open Dir: '%s' ****\n", mod->Dir.CStr);
-		harbol_string_clear(&mod->Dir);
+	if( tinydir_open(&dir, mod->dir.cstr)<0 ) {
+		fprintf(stderr, "Harbol Plugin Manager Error: **** Unable to Open dir: '%s' ****\n", mod->dir.cstr);
+		harbol_string_clear(&mod->dir);
 		tinydir_close(&dir);
 		return false;
 	} else {
@@ -326,20 +326,20 @@ HARBOL_EXPORT bool harbol_plugin_mod_load_plugins(struct HarbolPluginMod *const 
 
 HARBOL_EXPORT bool harbol_plugin_mod_unload_plugins(struct HarbolPluginMod *const mod, HarbolPluginEvent unload_cb)
 {
-	for( uindex_t i=0; i<mod->Plugins.Vec.Count; i++ ) {
-		struct HarbolPlugin *plugin = harbol_linkmap_index_get(&mod->Plugins, i);
+	for( uindex_t i=0; i<mod->plugins.vec.count; i++ ) {
+		struct HarbolPlugin *plugin = harbol_linkmap_index_get(&mod->plugins, i);
 		if( unload_cb != NULL )
 			unload_cb(mod, plugin);
 		harbol_plugin_clear(plugin);
 	}
-	harbol_linkmap_clear(&mod->Plugins, NULL);
+	harbol_linkmap_clear(&mod->plugins, NULL);
 	return true;
 }
 
 HARBOL_EXPORT bool harbol_plugin_mod_reload_plugins(struct HarbolPluginMod *const mod, HarbolPluginEvent prereload_cb, HarbolPluginEvent postreload_cb)
 {
-	for( uindex_t i=0; i<mod->Plugins.Vec.Count; i++ ) {
-		struct HarbolPlugin *plugin = harbol_linkmap_index_get(&mod->Plugins, i);
+	for( uindex_t i=0; i<mod->plugins.vec.count; i++ ) {
+		struct HarbolPlugin *plugin = harbol_linkmap_index_get(&mod->plugins, i);
 		if( prereload_cb != NULL )
 			prereload_cb(mod, plugin);
 			

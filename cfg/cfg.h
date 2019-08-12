@@ -23,12 +23,12 @@ enum HarbolCfgType {
 };
 
 union HarbolColor {
-	uint32_t Int;
-	struct{ uint8_t R,G,B,A; } Bytes;
+	uint32_t int32;
+	struct{ uint8_t r,g,b,a; } bytes;
 };
 
 struct HarbolVec4D {
-	float X,Y,Z,W;
+	float x,y,z,w;
 };
 
 

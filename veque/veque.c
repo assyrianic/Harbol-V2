@@ -16,24 +16,24 @@ HARBOL_EXPORT struct HarbolVeque *harbol_veque_new(const size_t datasize, const 
 HARBOL_EXPORT struct HarbolVeque harbol_veque_create(const size_t datasize, const size_t len)
 {
 	struct HarbolVeque veque = EMPTY_HARBOL_VEQUE;
-	veque.Table = harbol_alloc(datasize, len);
-	if( veque.Table==NULL )
+	veque.table = harbol_alloc(datasize, len);
+	if( veque.table==NULL )
 		return veque;
 	else {
-		veque.Len = len;
-		veque.DataSize = datasize;
+		veque.len = len;
+		veque.datasize = datasize;
 		return veque;
 	}
 }
 
 HARBOL_EXPORT bool harbol_veque_clear(struct HarbolVeque *const veque, void dtor(void**))
 {
-	if( dtor != NULL && veque->DataSize > 0 )
-		for( uindex_t i=0; i<veque->Len; i++ )
-			dtor((void**)&(uint8_t *){&veque->Table[i * veque->DataSize]});
+	if( dtor != NULL && veque->datasize > 0 )
+		for( uindex_t i=0; i<veque->len; i++ )
+			dtor((void**)&(uint8_t *){&veque->table[i * veque->datasize]});
 	
-	harbol_free(veque->Table), veque->Table = NULL;
-	veque->Len = veque->Begin = veque->End = 0;
+	harbol_free(veque->table), veque->table = NULL;
+	veque->len = veque->begin = veque->end = 0;
 	return true;
 }
 
@@ -50,59 +50,59 @@ HARBOL_EXPORT bool harbol_veque_free(struct HarbolVeque **const vequeref, void d
 
 HARBOL_EXPORT bool harbol_veque_insert_front(struct HarbolVeque *const restrict veque, void *restrict val)
 {
-	if( veque->Table==NULL || veque->DataSize==0 || harbol_veque_full(veque) )
+	if( veque->table==NULL || veque->datasize==0 || harbol_veque_full(veque) )
 		return false;
 	else {
-		veque->Begin = (veque->Begin + veque->Len - 1) % veque->Len;
-		return memcpy(&veque->Table[veque->Begin * veque->DataSize], val, veque->DataSize) != NULL;
+		veque->begin = (veque->begin + veque->len - 1) % veque->len;
+		return memcpy(&veque->table[veque->begin * veque->datasize], val, veque->datasize) != NULL;
 	}
 }
 
 HARBOL_EXPORT bool harbol_veque_insert_back(struct HarbolVeque *const restrict veque, void *restrict val)
 {
-	if( veque->Table==NULL || veque->DataSize==0 || harbol_veque_full(veque) )
+	if( veque->table==NULL || veque->datasize==0 || harbol_veque_full(veque) )
 		return false;
 	else {
-		memcpy(&veque->Table[veque->End * veque->DataSize], val, veque->DataSize);
-		veque->End = (veque->End + 1) % veque->Len;
+		memcpy(&veque->table[veque->end * veque->datasize], val, veque->datasize);
+		veque->end = (veque->end + 1) % veque->len;
 		return true;
 	}
 }
 
 HARBOL_EXPORT void *harbol_veque_pop_front(struct HarbolVeque *const veque)
 {
-	if( veque->Table==NULL || veque->DataSize==0 || harbol_veque_empty(veque) )
+	if( veque->table==NULL || veque->datasize==0 || harbol_veque_empty(veque) )
 		return NULL;
 	else {
-		uint8_t *const p = &veque->Table[veque->Begin * veque->DataSize];
-		veque->Begin = (veque->Begin + 1) % veque->Len;
+		uint8_t *const p = &veque->table[veque->begin * veque->datasize];
+		veque->begin = (veque->begin + 1) % veque->len;
 		return p;
 	}
 }
 
 HARBOL_EXPORT void *harbol_veque_pop_back(struct HarbolVeque *const veque)
 {
-	if( veque->Table==NULL || veque->DataSize==0 || harbol_veque_empty(veque) )
+	if( veque->table==NULL || veque->datasize==0 || harbol_veque_empty(veque) )
 		return NULL;
 	else {
-		veque->End = (veque->End + veque->Len - 1) % veque->Len;
-		return &veque->Table[veque->End * veque->DataSize];
+		veque->end = (veque->end + veque->len - 1) % veque->len;
+		return &veque->table[veque->end * veque->datasize];
 	}
 }
 
 HARBOL_EXPORT void harbol_veque_reset(struct HarbolVeque *const veque)
 {
-	veque->End = veque->Begin = 0;
+	veque->end = veque->begin = 0;
 }
 
 HARBOL_EXPORT size_t harbol_veque_count(const struct HarbolVeque *const veque)
 {
-	return (veque->End + veque->Len - veque->Begin) % veque->Len;
+	return (veque->end + veque->len - veque->begin) % veque->len;
 }
 
 HARBOL_EXPORT bool harbol_veque_full(const struct HarbolVeque *const veque)
 {
-	return harbol_veque_count(veque)==(veque->Len - 1);
+	return harbol_veque_count(veque)==(veque->len - 1);
 }
 
 HARBOL_EXPORT bool harbol_veque_empty(const struct HarbolVeque *const veque)
@@ -112,10 +112,10 @@ HARBOL_EXPORT bool harbol_veque_empty(const struct HarbolVeque *const veque)
 
 HARBOL_EXPORT void *harbol_veque_get_front(const struct HarbolVeque *const veque)
 {
-	return( veque->Table != NULL && veque->DataSize > 0 ) ? &veque->Table[veque->Begin * veque->DataSize] : NULL;
+	return( veque->table != NULL && veque->datasize > 0 ) ? &veque->table[veque->begin * veque->datasize] : NULL;
 }
 
 HARBOL_EXPORT void *harbol_veque_get_back(const struct HarbolVeque *const veque)
 {
-	return( veque->Table != NULL && veque->DataSize > 0 ) ? &veque->Table[veque->End * veque->DataSize] : NULL;
+	return( veque->table != NULL && veque->datasize > 0 ) ? &veque->table[veque->end * veque->datasize] : NULL;
 }

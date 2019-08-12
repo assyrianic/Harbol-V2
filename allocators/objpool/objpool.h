@@ -11,13 +11,13 @@ extern "C" {
 
 struct HarbolObjPool {
 	uint8_t
-		*Mem, // Beginning of memory pool
-		*Next // Num of next free block
+		*mem, // Beginning of memory pool
+		*next // Num of next free block
 	;
 	size_t
-		Size, // Num of blocks.
-		ObjSize, // Size of each block
-		FreeBlocks // Num of remaining blocks
+		size, // Num of blocks.
+		objsize, // size of each block
+		free_blocks // Num of remaining blocks
 	;
 };
 

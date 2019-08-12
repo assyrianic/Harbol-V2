@@ -10,8 +10,8 @@ extern "C" {
 
 // Vector + Queue = Veque!
 struct HarbolVeque {
-	uint8_t *Table;
-	size_t Len, DataSize, Begin, End;
+	uint8_t *table;
+	size_t len, datasize, begin, end;
 };
 
 #define EMPTY_HARBOL_VEQUE    {NULL,0,0,0,0};

@@ -11,11 +11,11 @@ HARBOL_EXPORT struct HarbolCache harbol_cache_create(const size_t size)
 	if( size==0 )
 		return cache;
 	else {
-		cache.Base = calloc(size, sizeof *cache.Base);
-		if( cache.Base==NULL ) {
+		cache.base = calloc(size, sizeof *cache.base);
+		if( cache.base==NULL ) {
 			return cache;
 		} else {
-			cache.Offs = cache.Base + size;
+			cache.offset = cache.base + size;
 			return cache;
 		}
 	}
@@ -27,18 +27,18 @@ HARBOL_EXPORT struct HarbolCache harbol_cache_from_buffer(void *const buf, const
 	if( size==0 )
 		return cache;
 	else {
-		cache.Base = buf;
-		cache.Offs = cache.Base + size;
+		cache.base = buf;
+		cache.offset = cache.base + size;
 		return cache;
 	}
 }
 
 HARBOL_EXPORT bool harbol_cache_clear(struct HarbolCache *const cache)
 {
-	if( cache->Base==NULL )
+	if( cache->base==NULL )
 		return false;
 	else {
-		free(cache->Base);
+		free(cache->base);
 		*cache = (struct HarbolCache)EMPTY_HARBOL_CACHE;
 		return true;
 	}
@@ -46,15 +46,15 @@ HARBOL_EXPORT bool harbol_cache_clear(struct HarbolCache *const cache)
 
 HARBOL_EXPORT void *harbol_cache_alloc(struct HarbolCache *const cache, const size_t size)
 {
-	if( cache->Base==NULL || size==0 || size > harbol_cache_remaining(cache) )
+	if( cache->base==NULL || size==0 || size > harbol_cache_remaining(cache) )
 		return NULL;
 	else {
-		cache->Offs -= harbol_align_size(size, sizeof(uintptr_t));
-		return cache->Offs;
+		cache->offset -= harbol_align_size(size, sizeof(uintptr_t));
+		return cache->offset;
 	}
 }
 
 HARBOL_EXPORT size_t harbol_cache_remaining(const struct HarbolCache *cache)
 {
-	return (uintptr_t)cache->Offs - (uintptr_t)cache->Base;
+	return (uintptr_t)cache->offset - (uintptr_t)cache->base;
 }

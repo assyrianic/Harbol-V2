@@ -10,8 +10,8 @@ extern "C" {
 
 
 struct HarbolBiNode {
-	uint8_t *Data;
-	struct HarbolBiNode *Next, *Prev;
+	uint8_t *data;
+	struct HarbolBiNode *next, *prev;
 };
 
 HARBOL_EXPORT NO_NULL struct HarbolBiNode *harbol_binode_new(void *data, size_t datasize);
@@ -21,8 +21,8 @@ HARBOL_EXPORT NO_NULL bool harbol_binode_set(struct HarbolBiNode *binode, void *
 
 
 struct HarbolBiList {
-	struct HarbolBiNode *Head, *Tail;
-	size_t Len, DataSize;
+	struct HarbolBiNode *head, *tail;
+	size_t len, datasize;
 };
 
 

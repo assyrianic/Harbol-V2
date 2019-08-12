@@ -6,8 +6,8 @@
 
 
 typedef struct {
-	uint16_t Size;
-	uint16_t Offset;
+	uint16_t size;
+	uint16_t offset;
 } TupleElem_t;
 
 HARBOL_EXPORT struct HarbolTuple *harbol_tuple_new(const size_t len, const size_t sizes[const static 1], const bool packed)
@@ -48,19 +48,15 @@ HARBOL_EXPORT struct HarbolTuple harbol_tuple_create(const size_t len, const siz
 	
 	// now do a final size alignment with the largest member.
 	const size_t aligned_total = harbol_align_size(total_size, largest_memb >= ptr_size ? ptr_size : largest_memb);
-	tuple.Datum = harbol_alloc(packed ? total_size : aligned_total, sizeof *tuple.Datum);
-	if( tuple.Datum==NULL ) {
-		harbol_vector_clear(&tuple.Fields, NULL);
+	tuple.datum = harbol_alloc(packed ? total_size : aligned_total, sizeof *tuple.datum);
+	if( tuple.datum==NULL ) {
+		harbol_vector_clear(&tuple.fields, NULL);
 		return tuple;
 	} else {
-		tuple.Len = packed ? total_size : aligned_total;
+		tuple.len = packed ? total_size : aligned_total;
 		uint32_t offset = 0;
 		for( uindex_t i=0; i<len; i++ ) {
-			TupleElem_t field = {0};
-			field.Size = sizes[i];
-			field.Offset = offset;
-			
-			harbol_vector_insert(&tuple.Fields, &field);
+			harbol_vector_insert(&tuple.fields, &(TupleElem_t){sizes[i], offset});
 			offset += sizes[i];
 			if( packed || len==1 )
 				continue;
@@ -76,12 +72,12 @@ HARBOL_EXPORT struct HarbolTuple harbol_tuple_create(const size_t len, const siz
 
 HARBOL_EXPORT bool harbol_tuple_clear(struct HarbolTuple *const tuple)
 {
-	if( tuple->Datum==NULL || tuple->Len==0 )
+	if( tuple->datum==NULL || tuple->len==0 )
 		return false;
 	else {
-		harbol_vector_clear(&tuple->Fields, NULL);
-		harbol_free(tuple->Datum), tuple->Datum = NULL;
-		tuple->Len = 0;
+		harbol_vector_clear(&tuple->fields, NULL);
+		harbol_free(tuple->datum), tuple->datum = NULL;
+		tuple->len = 0;
 		return true;
 	}
 }
@@ -99,35 +95,35 @@ HARBOL_EXPORT bool harbol_tuple_free(struct HarbolTuple **tupleref)
 
 HARBOL_EXPORT size_t harbol_tuple_len(const struct HarbolTuple *const tuple)
 {
-	return tuple->Len;
+	return tuple->len;
 }
 
 HARBOL_EXPORT size_t harbol_tuple_fields(const struct HarbolTuple *const tuple)
 {
-	return tuple->Fields.Count;
+	return tuple->fields.count;
 }
 
 HARBOL_EXPORT void *harbol_tuple_get(const struct HarbolTuple *const tuple, const uindex_t index)
 {
-	if( tuple->Datum==NULL || tuple->Len==0 )
+	if( tuple->datum==NULL || tuple->len==0 )
 		return NULL;
 	else {
-		const TupleElem_t *const field = harbol_vector_get(&tuple->Fields, index);
-		return( field==NULL || field->Offset >= tuple->Len ) ? NULL : tuple->Datum + field->Offset;
+		const TupleElem_t *const field = harbol_vector_get(&tuple->fields, index);
+		return( field==NULL || field->offset >= tuple->len ) ? NULL : tuple->datum + field->offset;
 	}
 }
 
 HARBOL_EXPORT void *harbol_tuple_set(const struct HarbolTuple *const restrict tuple, const uindex_t index, void *const val)
 {
-	if( tuple->Datum==NULL || tuple->Len==0 )
+	if( tuple->datum==NULL || tuple->len==0 )
 		return NULL;
 	else {
 		void *field = harbol_tuple_get(tuple, index);
 		if( field==NULL )
 			return NULL;
 		else {
-			const TupleElem_t *const field_data = harbol_vector_get(&tuple->Fields, index);
-			memcpy(field, val, field_data->Size);
+			const TupleElem_t *const field_data = harbol_vector_get(&tuple->fields, index);
+			memcpy(field, val, field_data->size);
 			return field;
 		}
 	}
@@ -135,20 +131,20 @@ HARBOL_EXPORT void *harbol_tuple_set(const struct HarbolTuple *const restrict tu
 
 HARBOL_EXPORT size_t harbol_tuple_field_size(const struct HarbolTuple *const tuple, const uindex_t index)
 {
-	if( tuple->Datum==NULL || tuple->Len==0 )
+	if( tuple->datum==NULL || tuple->len==0 )
 		return 0;
 	else {
-		const TupleElem_t *const field_data = harbol_vector_get(&tuple->Fields, index);
-		return( field_data==NULL ) ? 0 : field_data->Size;
+		const TupleElem_t *const field_data = harbol_vector_get(&tuple->fields, index);
+		return( field_data==NULL ) ? 0 : field_data->size;
 	}
 }
 
 HARBOL_EXPORT bool harbol_tuple_packed(const struct HarbolTuple *const tuple)
 {
-	return tuple->Packed;
+	return tuple->packed;
 }
 
 HARBOL_EXPORT bool harbol_tuple_to_struct(const struct HarbolTuple *const restrict tuple, void *const struckt)
 {
-	return( tuple->Datum==NULL || tuple->Len==0 ) ? false : memcpy(struckt, tuple->Datum, tuple->Len) != NULL;
+	return( tuple->datum==NULL || tuple->len==0 ) ? false : memcpy(struckt, tuple->datum, tuple->len) != NULL;
 }

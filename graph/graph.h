@@ -10,8 +10,8 @@ extern "C" {
 #include "../vector/vector.h"
 
 struct HarbolEdge {
-	uint8_t *Weight;
-	index_t Link;
+	uint8_t *weight;
+	index_t link;
 };
 
 #define EMPTY_HARBOL_EDGE    { NULL,-1 }
@@ -25,8 +25,8 @@ HARBOL_EXPORT NO_NULL bool harbol_edge_set(struct HarbolEdge *edge, void *data, 
 
 
 struct HarbolVertex {
-	struct HarbolVector Edges;
-	uint8_t *Data;
+	struct HarbolVector edges;
+	uint8_t *data;
 };
 
 #define EMPTY_HARBOL_VERT    { EMPTY_HARBOL_VECTOR, NULL }
@@ -46,8 +46,8 @@ HARBOL_EXPORT NEVER_NULL(1, 2) bool harbol_vertex_del_edge(struct HarbolVertex *
 
 // Adjacency List Graph Implementation.
 struct HarbolGraph {
-	struct HarbolVector Vertices;
-	size_t VertexDataSize, EdgeDataSize;
+	struct HarbolVector vertices;
+	size_t vert_datasize, edge_datasize;
 };
 
 #define EMPTY_HARBOL_GRAPH    { EMPTY_HARBOL_VECTOR,0,0 }

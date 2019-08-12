@@ -15,8 +15,8 @@
 * Doubly Linked List
 * Byte Buffer
 * Tuple type - convertible to structs, can also be packed.
-* Memory Pool - returns any size and has optional auto defrag.
-* Object Pool - like the memory pool but for fixed size data.
+* Memory Pool - accomodates any size and has optional auto defragging.
+* Object Pool - like the memory pool but for fixed size data/objects.
 * Weighted Graph
 * N-ary Tree
 * Ordered String-based Hash Table

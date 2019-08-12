@@ -10,26 +10,26 @@ extern "C" {
 
 
 struct HarbolMemNode {
-	size_t Size;
-	struct HarbolMemNode *Next, *Prev;
+	size_t size;
+	struct HarbolMemNode *next, *prev;
 };
 
 struct HarbolMemPool {
 	struct {
-		struct HarbolMemNode *Head, *Tail;
-		size_t Len, MaxNodes;
-		bool AutoDefrag : 1;
-	} FreeList;
+		struct HarbolMemNode *head, *tail;
+		size_t len, max_nodes;
+		bool auto_defrag : 1;
+	} freelist;
 	
 	struct {
-		uint8_t *Mem, *Base;
-		size_t Size;
-	} Stack;
+		uint8_t *mem, *base;
+		size_t size;
+	} stack;
 	
 	// hold 32 byte, 64 byte, and 128 byte sizes into a bucket.
 #	define HARBOL_BUCKET_SIZE    8
 #	define HARBOL_BUCKET_BITS    3
-	struct HarbolMemNode *Buckets[HARBOL_BUCKET_SIZE];
+	struct HarbolMemNode *buckets[HARBOL_BUCKET_SIZE];
 };
 
 #define EMPTY_HARBOL_MEMPOOL    { {NULL,NULL,0,0,false}, {NULL,NULL,0}, {NULL} }

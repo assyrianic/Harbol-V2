@@ -10,7 +10,7 @@ extern "C" {
 
 
 struct HarbolCache {
-	uint8_t *Base, *Offs;
+	uint8_t *base, *offset;
 };
 
 #define EMPTY_HARBOL_CACHE    { NULL,NULL }

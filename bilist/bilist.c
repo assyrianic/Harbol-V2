@@ -9,11 +9,11 @@ HARBOL_EXPORT struct HarbolBiNode *harbol_binode_new(void *const data, const siz
 {
 	struct HarbolBiNode *restrict node = harbol_alloc(1, sizeof *node);
 	if( node != NULL ) {
-		node->Next = node->Prev = NULL;
-		node->Data = harbol_alloc(datasize, sizeof *node->Data);
-		if( node->Data==NULL )
+		node->next = node->prev = NULL;
+		node->data = harbol_alloc(datasize, sizeof *node->data);
+		if( node->data==NULL )
 			return NULL;
-		else memcpy(node->Data, data, datasize);
+		else memcpy(node->data, data, datasize);
 	}
 	return node;
 }
@@ -24,10 +24,10 @@ HARBOL_EXPORT bool harbol_binode_free(struct HarbolBiNode **const binoderef, voi
 		return false;
 	else {
 		if( dtor != NULL )
-			dtor((void**)&(*binoderef)->Data);
+			dtor((void**)&(*binoderef)->data);
 		
-		harbol_free((*binoderef)->Data), (*binoderef)->Data=NULL;
-		harbol_binode_free(&(*binoderef)->Next, dtor);
+		harbol_free((*binoderef)->data), (*binoderef)->data=NULL;
+		harbol_binode_free(&(*binoderef)->next, dtor);
 		harbol_free(*binoderef), *binoderef = NULL;
 		return true;
 	}
@@ -37,11 +37,11 @@ HARBOL_EXPORT bool harbol_binode_set(struct HarbolBiNode *const restrict binode,
 {
 	if( datasize==0 )
 		return false;
-	else if( binode->Data==NULL ) {
-		binode->Data = harbol_alloc(datasize, sizeof *binode->Data);
-		return( binode->Data==NULL ) ? false : memcpy(binode->Data, data, datasize) != NULL;
+	else if( binode->data==NULL ) {
+		binode->data = harbol_alloc(datasize, sizeof *binode->data);
+		return( binode->data==NULL ) ? false : memcpy(binode->data, data, datasize) != NULL;
 	} else {
-		return memcpy(binode->Data, data, datasize) != NULL;
+		return memcpy(binode->data, data, datasize) != NULL;
 	}
 }
 
@@ -63,9 +63,9 @@ HARBOL_EXPORT struct HarbolBiList harbol_bilist_create(const size_t datasize)
 
 HARBOL_EXPORT bool harbol_bilist_clear(struct HarbolBiList *const list, void dtor(void**))
 {
-	harbol_binode_free(&list->Head, dtor);
-	list->Tail = NULL;
-	list->Len = 0;
+	harbol_binode_free(&list->head, dtor);
+	list->tail = NULL;
+	list->len = 0;
 	return true;
 }
 
@@ -83,66 +83,66 @@ HARBOL_EXPORT bool harbol_bilist_free(struct HarbolBiList **const listref, void 
 
 HARBOL_EXPORT bool harbol_bilist_add_node_at_head(struct HarbolBiList *const list, struct HarbolBiNode *const node)
 {
-	if( list->Head==NULL ) {
-		list->Head = list->Tail = node;
+	if( list->head==NULL ) {
+		list->head = list->tail = node;
 	} else {
 		// x(node)-> x(CurrHead)
-		node->Next = list->Head;
+		node->next = list->head;
 		// NULL <-(node)-> x(CurrHead)
-		node->Prev = NULL;
+		node->prev = NULL;
 		// NULL <-(node)-> <-(CurrHead)
-		list->Head->Prev = node;
+		list->head->prev = node;
 		// NULL <-(CurrHead)-> <-(OldHead)
-		list->Head = node;
+		list->head = node;
 	}
-	list->Len++;
+	list->len++;
 	return true;
 }
 
 HARBOL_EXPORT bool harbol_bilist_add_node_at_tail(struct HarbolBiList *const list, struct HarbolBiNode *const node)
 {
-	if( list->Len>0 ) {
+	if( list->len>0 ) {
 		// <-(CurrTail)x <-(node)x
-		node->Prev = list->Tail;
+		node->prev = list->tail;
 		// <-(CurrTail)x <-(node)-> NULL
-		node->Next = NULL;
+		node->next = NULL;
 		// <-(CurrTail)-> <-(node)-> NULL
-		list->Tail->Next = node;
+		list->tail->next = node;
 		// <-(OldTail)-> <-(CurrTail)-> NULL
-		list->Tail = node;
+		list->tail = node;
 	} else {
-		list->Head = list->Tail = node;
+		list->head = list->tail = node;
 	}
-	list->Len++;
+	list->len++;
 	return true;
 }
 
 HARBOL_EXPORT bool harbol_bilist_add_node_at_index(struct HarbolBiList *const list, struct HarbolBiNode *const node, const uindex_t index)
 {
-	if( list->Head==NULL || index==0 )
+	if( list->head==NULL || index==0 )
 		return harbol_bilist_add_node_at_head(list, node);
 	// if index is out of bounds, append at tail end.
-	else if( index >= list->Len )
+	else if( index >= list->len )
 		return harbol_bilist_add_node_at_tail(list, node);
 	else {
-		const bool prev_dir = ( index >= list->Len/2 );
-		struct HarbolBiNode *curr = prev_dir ? list->Tail : list->Head;
-		uindex_t i=prev_dir ? list->Len-1 : 0;
-		while( (prev_dir ? curr->Prev != NULL : curr->Next != NULL) && i != index ) {
-			curr = prev_dir ? curr->Prev : curr->Next;
+		const bool prev_dir = ( index >= list->len/2 );
+		struct HarbolBiNode *curr = prev_dir ? list->tail : list->head;
+		uindex_t i=prev_dir ? list->len-1 : 0;
+		while( (prev_dir ? curr->prev != NULL : curr->next != NULL) && i != index ) {
+			curr = prev_dir ? curr->prev : curr->next;
 			prev_dir ? i-- : i++;
 		}
 		if( i>0 ) {
 			// P-> <-(curr)
 			// P-> x(node)x
-			curr->Prev->Next = node;
+			curr->prev->next = node;
 			// P-> <-(node)x
-			node->Prev = curr->Prev;
+			node->prev = curr->prev;
 			// P-> <-(node)-> x(curr)
-			node->Next = curr;
+			node->next = curr;
 			// P-> <-(node)-> <-(curr)
-			curr->Prev = node;
-			list->Len++;
+			curr->prev = node;
+			list->len++;
 			return true;
 		}
 		else return false;
@@ -152,10 +152,10 @@ HARBOL_EXPORT bool harbol_bilist_add_node_at_index(struct HarbolBiList *const li
 
 HARBOL_EXPORT bool harbol_bilist_insert_at_head(struct HarbolBiList *const restrict list, void *const restrict val)
 {
-	if( list->DataSize==0 )
+	if( list->datasize==0 )
 		return false;
 	else {
-		struct HarbolBiNode *node = harbol_binode_new(val, list->DataSize);
+		struct HarbolBiNode *node = harbol_binode_new(val, list->datasize);
 		if( node==NULL )
 			return false;
 		else {
@@ -169,10 +169,10 @@ HARBOL_EXPORT bool harbol_bilist_insert_at_head(struct HarbolBiList *const restr
 
 HARBOL_EXPORT bool harbol_bilist_insert_at_tail(struct HarbolBiList *const restrict list, void *restrict val)
 {
-	if( list->DataSize==0 )
+	if( list->datasize==0 )
 		return false;
 	else {
-		struct HarbolBiNode *node = harbol_binode_new(val, list->DataSize);
+		struct HarbolBiNode *node = harbol_binode_new(val, list->datasize);
 		if( node==NULL )
 			return false;
 		else {
@@ -186,10 +186,10 @@ HARBOL_EXPORT bool harbol_bilist_insert_at_tail(struct HarbolBiList *const restr
 
 HARBOL_EXPORT bool harbol_bilist_insert_at_index(struct HarbolBiList *const restrict list, void *const restrict val, uindex_t index)
 {
-	if( list->DataSize==0 )
+	if( list->datasize==0 )
 		return false;
 	else {
-		struct HarbolBiNode *node = harbol_binode_new(val, list->DataSize);
+		struct HarbolBiNode *node = harbol_binode_new(val, list->datasize);
 		if( node==NULL )
 			return false;
 		else {
@@ -204,18 +204,18 @@ HARBOL_EXPORT bool harbol_bilist_insert_at_index(struct HarbolBiList *const rest
 HARBOL_EXPORT struct HarbolBiNode *harbol_bilist_index_get_node(const struct HarbolBiList *const list, const uindex_t index)
 {
 	if( index==0 )
-		return list->Head;
-	else if( index >= list->Len )
-		return list->Tail;
+		return list->head;
+	else if( index >= list->len )
+		return list->tail;
 	else {
-		const bool prev_dir = ( index >= list->Len/2 );
-		struct HarbolBiNode *node = prev_dir ? list->Tail : list->Head;
-		for( uindex_t i=prev_dir ? list->Len-1 : 0; i<list->Len; prev_dir ? i-- : i++ ) {
+		const bool prev_dir = ( index >= list->len/2 );
+		struct HarbolBiNode *node = prev_dir ? list->tail : list->head;
+		for( uindex_t i=prev_dir ? list->len-1 : 0; i<list->len; prev_dir ? i-- : i++ ) {
 			if( node==NULL )
 				break;
 			else if( i==index )
 				return node;
-			else node = prev_dir ? node->Prev : node->Next;
+			else node = prev_dir ? node->prev : node->next;
 		}
 		return NULL;
 	}
@@ -223,11 +223,11 @@ HARBOL_EXPORT struct HarbolBiNode *harbol_bilist_index_get_node(const struct Har
 
 HARBOL_EXPORT struct HarbolBiNode *harbol_bilist_val_get_node(const struct HarbolBiList *restrict list, void *val)
 {
-	if( list->DataSize==0 )
+	if( list->datasize==0 )
 		return NULL;
 	else {
-		for( struct HarbolBiNode *n=list->Head; n != NULL; n=n->Next )
-			if( !memcmp(n->Data, val, list->DataSize) )
+		for( struct HarbolBiNode *n=list->head; n != NULL; n=n->next )
+			if( !memcmp(n->data, val, list->datasize) )
 				return n;
 		return NULL;
 	}
@@ -235,19 +235,19 @@ HARBOL_EXPORT struct HarbolBiNode *harbol_bilist_val_get_node(const struct Harbo
 
 HARBOL_EXPORT void *harbol_bilist_get(const struct HarbolBiList *const list, const uindex_t index)
 {
-	if( index==0 && list->Head != NULL )
-		return list->Head->Data;
-	else if( index >= list->Len && list->Tail != NULL )
-		return list->Tail->Data;
+	if( index==0 && list->head != NULL )
+		return list->head->data;
+	else if( index >= list->len && list->tail != NULL )
+		return list->tail->data;
 	else {
-		const bool prev_dir = ( index >= list->Len/2 );
-		struct HarbolBiNode *node = prev_dir ? list->Tail : list->Head;
-		for( uindex_t i=prev_dir ? list->Len-1 : 0; i<list->Len; prev_dir ? i-- : i++ ) {
+		const bool prev_dir = ( index >= list->len/2 );
+		struct HarbolBiNode *node = prev_dir ? list->tail : list->head;
+		for( uindex_t i=prev_dir ? list->len-1 : 0; i<list->len; prev_dir ? i-- : i++ ) {
 			if( node==NULL )
 				break;
 			else if( i==index )
-				return node->Data;
-			else node = prev_dir ? node->Prev : node->Next;
+				return node->data;
+			else node = prev_dir ? node->prev : node->next;
 		}
 		return NULL;
 	}
@@ -255,21 +255,21 @@ HARBOL_EXPORT void *harbol_bilist_get(const struct HarbolBiList *const list, con
 
 HARBOL_EXPORT bool harbol_bilist_set(struct HarbolBiList *const restrict list, const uindex_t index, void *const val)
 {
-	if( list->DataSize==0 )
+	if( list->datasize==0 )
 		return false;
-	else if( index==0 && list->Head != NULL )
-		return harbol_binode_set(list->Head, val, list->DataSize);
-	else if( index >= list->Len && list->Tail != NULL )
-		return harbol_binode_set(list->Tail, val, list->DataSize);
+	else if( index==0 && list->head != NULL )
+		return harbol_binode_set(list->head, val, list->datasize);
+	else if( index >= list->len && list->tail != NULL )
+		return harbol_binode_set(list->tail, val, list->datasize);
 	else {
-		const bool prev_dir = ( index >= list->Len/2 );
-		struct HarbolBiNode *node = prev_dir ? list->Tail : list->Head;
-		for( uindex_t i=prev_dir ? list->Len-1 : 0; i<list->Len; prev_dir ? i-- : i++ ) {
+		const bool prev_dir = ( index >= list->len/2 );
+		struct HarbolBiNode *node = prev_dir ? list->tail : list->head;
+		for( uindex_t i=prev_dir ? list->len-1 : 0; i<list->len; prev_dir ? i-- : i++ ) {
 			if( node==NULL )
 				break;
 			else if( i==index )
-				return harbol_binode_set(node, val, list->DataSize);
-			else node = prev_dir ? node->Prev : node->Next;
+				return harbol_binode_set(node, val, list->datasize);
+			else node = prev_dir ? node->prev : node->next;
 		}
 		return false;
 	}
@@ -281,14 +281,14 @@ HARBOL_EXPORT bool harbol_bilist_index_del(struct HarbolBiList *const list, cons
 	if( node==NULL )
 		return false;
 	else {
-		node->Prev ? (node->Prev->Next = node->Next) : (list->Head = node->Next);
-		node->Next ? (node->Next->Prev = node->Prev) : (list->Tail = node->Prev);
+		node->prev ? (node->prev->next = node->next) : (list->head = node->next);
+		node->next ? (node->next->prev = node->prev) : (list->tail = node->prev);
 		
 		if( dtor != NULL )
-			dtor((void**)&node->Data);
-		harbol_free(node->Data);
+			dtor((void**)&node->data);
+		harbol_free(node->data);
 		harbol_free(node), node=NULL;
-		list->Len--;
+		list->len--;
 		return true;
 	}
 }
@@ -299,14 +299,14 @@ HARBOL_EXPORT bool harbol_bilist_node_del(struct HarbolBiList *const list, struc
 		return false;
 	else {
 		struct HarbolBiNode *node = *noderef;
-		node->Prev ? (node->Prev->Next = node->Next) : (list->Head = node->Next);
-		node->Next ? (node->Next->Prev = node->Prev) : (list->Tail = node->Prev);
+		node->prev ? (node->prev->next = node->next) : (list->head = node->next);
+		node->next ? (node->next->prev = node->prev) : (list->tail = node->prev);
 		
 		if( dtor != NULL )
-			dtor((void**)&node->Data);
-		harbol_free(node->Data);
+			dtor((void**)&node->data);
+		harbol_free(node->data);
 		harbol_free(*noderef), *noderef=NULL;
-		list->Len--;
+		list->len--;
 		return true;
 	}
 }

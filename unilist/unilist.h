@@ -9,8 +9,8 @@ extern "C" {
 #include "../harbol_common_includes.h"
 
 struct HarbolUniNode {
-	uint8_t *Data;
-	struct HarbolUniNode *Next;
+	uint8_t *data;
+	struct HarbolUniNode *next;
 };
 
 HARBOL_EXPORT NO_NULL struct HarbolUniNode *harbol_uninode_new(void *data, size_t datasize);
@@ -19,8 +19,8 @@ HARBOL_EXPORT NO_NULL bool harbol_uninode_set(struct HarbolUniNode *uninode, voi
 
 
 struct HarbolUniList {
-	struct HarbolUniNode *Head, *Tail;
-	size_t Len, DataSize;
+	struct HarbolUniNode *head, *tail;
+	size_t len, datasize;
 };
 
 

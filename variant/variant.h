@@ -34,8 +34,8 @@ enum HarbolType {
 };
 
 struct HarbolVariant {
-	uint8_t *Data; size_t Size;
-	int32_t Type;
+	uint8_t *data; size_t datasize;
+	int32_t tag;
 };
 
 

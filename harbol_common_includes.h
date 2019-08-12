@@ -190,8 +190,8 @@ inline void harbol_clean(void **const ptrref)
 	harbol_mempool_cleanup(g_pool, ptrref);
 #else
 	free(*ptrref);
-#endif
 	*ptrref = NULL;
+#endif
 }
 
 static inline bool harbol_generic_vector_resizer(void *const vec, const size_t new_size, const size_t element_size)
@@ -257,7 +257,7 @@ static inline NO_NULL size_t string_hash(const char key[static 1])
 	return h >> 1;
 }
 
-static inline size_t int_hash(size_t a)
+static inline size_t int_hash(const size_t a)
 {
 	return (((a ^ (a>>4)) ^ 0xdeadbeef) + ((a ^ (a>>4))<<5)) ^ ((a>>11) * 37);
 }
@@ -311,24 +311,24 @@ static inline NO_NULL ssize_t get_file_size(FILE *const file)
 // Binary Iterator Union.
 // for "struct/union" types, cast from the 'Void' alias.
 union HarbolBinIter {
-	bool *restrict Bool;
+	bool *restrict boolean;
 	
-	uint8_t *restrict UInt8; int8_t *restrict Int8;
-	uint16_t *restrict UInt16; int16_t *restrict Int16;
-	uint32_t *restrict UInt32; int32_t *restrict Int32;
-	uint64_t *restrict UInt64; int64_t *restrict Int64;
-	size_t *restrict Size; ssize_t *restrict SSize;
-	uintptr_t *restrict UIntPtr; intptr_t *restrict IntPtr;
+	uint8_t *restrict uint8; int8_t *restrict int8;
+	uint16_t *restrict uint16; int16_t *restrict int16;
+	uint32_t *restrict uint32; int32_t *restrict int32;
+	uint64_t *restrict uint64; int64_t *restrict int64;
+	size_t *restrict size; ssize_t *restrict ssize;
+	uintptr_t *restrict uintptr; intptr_t *restrict intptr;
 	
-	float32_t *restrict Float32;
-	float64_t *restrict Float64;
-	floatptr_t *restrict FloatPtr;
-	floatmax_t *restrict FloatMax;
+	float32_t *restrict float32;
+	float64_t *restrict float64;
+	floatptr_t *restrict floatptr;
+	floatmax_t *restrict floatmax;
 	
-	char *restrict String;
+	char *restrict string;
 	
-	void *restrict Void;
-	union HarbolBinIter *restrict Self;
+	void *restrict ptr;
+	union HarbolBinIter *restrict self;
 };
 
 static inline NO_NULL uint8_t *make_buffer_from_binary(const char file_name[restrict static 1])

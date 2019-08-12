@@ -10,8 +10,8 @@ extern "C" {
 #include "../vector/vector.h"
 
 struct HarbolTree {
-	struct HarbolVector Children;
-	uint8_t *Data;
+	struct HarbolVector children;
+	uint8_t *data;
 };
 
 #define EMPTY_HARBOL_TREE    { EMPTY_HARBOL_VECTOR, NULL }

@@ -11,8 +11,8 @@ extern "C" {
 
 
 struct HarbolLinkMap {
-	struct HarbolMap Map;
-	struct HarbolVector Vec;
+	struct HarbolMap map;
+	struct HarbolVector vec;
 };
 
 #define EMPTY_HARBOL_LINKMAP    { EMPTY_HARBOL_VECTOR, EMPTY_HARBOL_MAP }

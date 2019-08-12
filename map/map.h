@@ -16,8 +16,8 @@ extern "C" {
 
 
 struct HarbolKeyVal {
-	struct HarbolString Key;
-	uint8_t *Data;
+	struct HarbolString key;
+	uint8_t *data;
 };
 
 HARBOL_EXPORT NO_NULL struct HarbolKeyVal *harbol_kvpair_new(const char cstr[], void *data, size_t datasize);
@@ -25,9 +25,9 @@ HARBOL_EXPORT NEVER_NULL(1) bool harbol_kvpair_free(struct HarbolKeyVal **kvpair
 
 
 struct HarbolMap {
-	// Buckets is a vector of vectors of keyval pointers.
-	struct HarbolVector *Buckets;
-	size_t Len, Count, DataSize;
+	// buckets is a vector of vectors of keyval pointers.
+	struct HarbolVector *buckets;
+	size_t len, count, datasize;
 };
 
 #define EMPTY_HARBOL_MAP    {NULL,0,0,0}

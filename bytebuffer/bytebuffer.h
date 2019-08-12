@@ -9,8 +9,8 @@ extern "C" {
 #include "../harbol_common_includes.h"
 
 struct HarbolByteBuf {
-	uint8_t *Table;
-	size_t Len, Count;
+	uint8_t *table;
+	size_t len, count;
 };
 
 #define EMPTY_HARBOL_BYTEBUF    { NULL,0,0 }

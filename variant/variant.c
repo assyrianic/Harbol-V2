@@ -16,22 +16,22 @@ HARBOL_EXPORT struct HarbolVariant *harbol_variant_new(void *const restrict val,
 HARBOL_EXPORT struct HarbolVariant harbol_variant_create(void *const restrict val, const size_t datasize, const int32_t type_flags)
 {
 	struct HarbolVariant v = {NULL, datasize, type_flags};
-	v.Data = harbol_alloc(v.Size, sizeof *v.Data);
-	if( v.Data != NULL ) {
-		memcpy(v.Data, val, v.Size);
+	v.data = harbol_alloc(v.datasize, sizeof *v.data);
+	if( v.data != NULL ) {
+		memcpy(v.data, val, v.datasize);
 	}
 	return v;
 }
 
 HARBOL_EXPORT bool harbol_variant_clear(struct HarbolVariant *const variant, void dtor(void**))
 {
-	if( variant->Size==0 || variant->Data==NULL )
+	if( variant->datasize==0 || variant->data==NULL )
 		return false;
 	else {
 		if( dtor != NULL )
-			dtor((void**)&variant->Data);
-		if( variant->Data != NULL )
-			harbol_free(variant->Data), variant->Data=NULL;
+			dtor((void**)&variant->data);
+		if( variant->data != NULL )
+			harbol_free(variant->data), variant->data=NULL;
 		return true;
 	}
 }
@@ -45,22 +45,22 @@ HARBOL_EXPORT bool harbol_variant_free(struct HarbolVariant **const variantref, 
 
 HARBOL_EXPORT void *harbol_variant_get(const struct HarbolVariant *const variant)
 {
-	return( variant->Size==0 || variant->Data==NULL ) ? NULL : variant->Data;
+	return( variant->datasize==0 || variant->data==NULL ) ? NULL : variant->data;
 }
 
 HARBOL_EXPORT bool harbol_variant_set(struct HarbolVariant *const restrict variant, void *const restrict val)
 {
-	if( variant->Size==0 )
+	if( variant->datasize==0 )
 		return false;
-	else if( variant->Data==NULL ) {
-		variant->Data = harbol_alloc(variant->Size, sizeof *variant->Data);
-		return( variant->Data==NULL ) ? false : memcpy(variant->Data, val, variant->Size) != NULL;
+	else if( variant->data==NULL ) {
+		variant->data = harbol_alloc(variant->datasize, sizeof *variant->data);
+		return( variant->data==NULL ) ? false : memcpy(variant->data, val, variant->datasize) != NULL;
 	} else {
-		return memcpy(variant->Data, val, variant->Size) != NULL;
+		return memcpy(variant->data, val, variant->datasize) != NULL;
 	}
 }
 
 HARBOL_EXPORT NO_NULL int32_t harbol_variant_tag(const struct HarbolVariant *variant)
 {
-	return variant->Type;
+	return variant->tag;
 }

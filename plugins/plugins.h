@@ -8,7 +8,7 @@ extern "C" {
 #include "../harbol_common_defines.h"
 #include "../harbol_common_includes.h"
 #include "../linkmap/linkmap.h"
-#include "tinydir.h"
+#include "../tinydir.h"
 
 
 #ifdef OS_WINDOWS
@@ -18,9 +18,8 @@ extern "C" {
 #endif
 
 struct HarbolPlugin {
-	struct HarbolString LibPath;
-	struct HarbolString *Name;
-	HarbolDLL SharedObj;
+	struct HarbolString path, *name;
+	HarbolDLL dll;
 };
 
 HARBOL_EXPORT NO_NULL struct HarbolPlugin harbol_plugin_create(HarbolDLL module, const char libpath[]);
@@ -35,9 +34,9 @@ HARBOL_EXPORT NO_NULL bool harbol_plugin_reload(struct HarbolPlugin *plugin);
 
 
 struct HarbolPluginMod {
-	struct HarbolLinkMap Plugins;
-	struct HarbolString Dir;
-	void *UserData;
+	struct HarbolLinkMap plugins;
+	struct HarbolString dir;
+	void *userdata;
 };
 
 /* When an individual plugin has been changed such as being loaded, reloading, or unloaded, this callback will fire.

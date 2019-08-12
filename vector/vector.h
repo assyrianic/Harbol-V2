@@ -14,8 +14,8 @@ extern "C" {
 
 
 struct HarbolVector {
-	uint8_t *Table;
-	size_t Len, Count, DataSize;
+	uint8_t *table;
+	size_t len, count, datasize;
 };
 
 #define EMPTY_HARBOL_VECTOR    {NULL,0,0,0}

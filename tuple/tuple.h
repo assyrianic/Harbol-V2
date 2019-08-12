@@ -11,10 +11,10 @@ extern "C" {
 
 
 struct HarbolTuple {
-	struct HarbolVector Fields;
-	uint8_t *Datum;
-	size_t Len;
-	bool Packed : 1;
+	struct HarbolVector fields;
+	uint8_t *datum;
+	size_t len;
+	bool packed : 1;
 };
 
 HARBOL_EXPORT NO_NULL struct HarbolTuple *harbol_tuple_new(size_t len, const size_t sizes[], bool packed);

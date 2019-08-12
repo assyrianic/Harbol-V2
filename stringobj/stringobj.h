@@ -9,8 +9,8 @@ extern "C" {
 #include "../harbol_common_includes.h"
 
 struct HarbolString {
-	char *CStr;
-	size_t Len;
+	char *cstr;
+	size_t len;
 };
 
 #define EMPTY_HARBOL_STRING    { NULL,0 }
