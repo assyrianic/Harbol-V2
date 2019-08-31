@@ -89,6 +89,26 @@ debug:
 	+$(MAKE) -C veque debug
 	ar cr lib$(LIB_NAME).a $(OBJS)
 
+debug_shared:
+	+$(MAKE) -C stringobj debug
+	+$(MAKE) -C vector debug
+	+$(MAKE) -C unilist debug
+	+$(MAKE) -C bilist debug
+	+$(MAKE) -C tuple debug
+	+$(MAKE) -C bytebuffer debug
+	+$(MAKE) -C map debug
+	+$(MAKE) -C allocators/mempool debug
+	+$(MAKE) -C allocators/objpool debug
+	+$(MAKE) -C allocators/cache debug
+	+$(MAKE) -C graph debug
+	+$(MAKE) -C tree debug
+	+$(MAKE) -C linkmap debug
+	+$(MAKE) -C variant debug
+	+$(MAKE) -C cfg debug
+	+$(MAKE) -C plugins debug
+	+$(MAKE) -C veque debug
+	$(CC) -shared -o lib$(LIB_NAME).so $(OBJS)
+
 clean:
 	+$(MAKE) -C stringobj clean
 	+$(MAKE) -C vector clean

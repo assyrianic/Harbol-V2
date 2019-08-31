@@ -120,7 +120,7 @@ typedef struct { const char *cstr; const size_t len; } string_t;
 #endif
 
 #ifdef C11
-	_Static_assert(sizeof(floatptr_t) * CHAR_BIT == sizeof(intptr_t), "Unexpected `floatptr_t` size");
+	_Static_assert(sizeof(floatptr_t) == sizeof(intptr_t), "Unexpected `floatptr_t` size");
 #endif
 
 
@@ -247,14 +247,10 @@ static inline size_t harbol_align_size(const size_t size, const size_t align)
 // use ONLY FOR HASH TABLE IMPLEMENTATIONS.
 static inline NO_NULL size_t string_hash(const char key[static 1])
 {
-	// some hashing constants.
-	// 37, 97, 33
-	// using 37 because it brings better distribution with bitshift at return.
-	const size_t hash_constant = 37;
 	size_t h = 0;
 	while( *key != '\0' )
-		h = hash_constant * h + *key++;
-	return h >> 1;
+		h = (h<<6) ^ (h>>26) ^ *key++;
+	return h;
 }
 
 static inline size_t int_hash(const size_t a)
@@ -309,26 +305,26 @@ static inline NO_NULL ssize_t get_file_size(FILE *const file)
 }
 
 // Binary Iterator Union.
-// for "struct/union" types, cast from the 'Void' alias.
+// for "struct/union" types, cast from the 'ptr' alias.
 union HarbolBinIter {
-	bool *restrict boolean;
+	bool *boolean;
 	
-	uint8_t *restrict uint8; int8_t *restrict int8;
-	uint16_t *restrict uint16; int16_t *restrict int16;
-	uint32_t *restrict uint32; int32_t *restrict int32;
-	uint64_t *restrict uint64; int64_t *restrict int64;
-	size_t *restrict size; ssize_t *restrict ssize;
-	uintptr_t *restrict uintptr; intptr_t *restrict intptr;
+	uint8_t *uint8; int8_t *int8;
+	uint16_t *uint16; int16_t *int16;
+	uint32_t *uint32; int32_t *int32;
+	uint64_t *uint64; int64_t *int64;
+	size_t *size; ssize_t *ssize;
+	uintptr_t *uintptr; intptr_t *intptr;
 	
-	float32_t *restrict float32;
-	float64_t *restrict float64;
-	floatptr_t *restrict floatptr;
-	floatmax_t *restrict floatmax;
+	float32_t *float32;
+	float64_t *float64;
+	floatptr_t *floatptr;
+	floatmax_t *floatmax;
 	
-	char *restrict string;
+	char *string;
 	
-	void *restrict ptr;
-	union HarbolBinIter *restrict self;
+	void *ptr;
+	union HarbolBinIter *self;
 };
 
 static inline NO_NULL uint8_t *make_buffer_from_binary(const char file_name[restrict static 1])
@@ -394,6 +390,11 @@ static inline bool is_hex(const int c)
 	return( (c>='a' && c<='f') || (c>='A' && c<='F') || is_decimal(c) );
 }
 
+static inline bool is_binary(const int c)
+{
+	return( c=='0' || c=='1' );
+}
+
 static inline bool is_whitespace(const int c)
 {
 	return( c==' ' || c=='\t' || c=='\r' || c=='\v' || c=='\f' || c=='\n' );
@@ -402,6 +403,22 @@ static inline bool is_whitespace(const int c)
 static inline bool is_aligned(const void *const ptr, const size_t bytes)
 {
 	return ((uintptr_t)ptr & (bytes-1))==0;
+}
+
+static inline bool is_valid_ucn(const int32_t c)
+{
+	return ( 0xD800<=c && c<=0xDFFF ) ? false : ( 0xA0<=c||c=='$'||c=='@'||c=='`' );
+}
+
+static inline NO_NULL NONNULL_RET const char *skip_whitespace(const char *str)
+{
+	if( *str==0 )
+		return str;
+	else {
+		while( *str != 0 && is_whitespace(*str) )
+			str++;
+		return str;
+	}
 }
 
 #endif /* HARBOL_COMMON_INCLUDES_INCLUDED */

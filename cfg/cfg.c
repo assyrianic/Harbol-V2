@@ -6,11 +6,11 @@
 
 /* CFG Parser in EBNF grammar
 	keyval = <string> [':'] (<value>|<section>) [','] ;
-	section = '{' <keyval> '}' ;
-	value = <string> | <number> | <color> | "true" | "false" | "null" ;
+	section = '{' *<keyval> '}' ;
+	value = <string> | <number> | <color> | <vec> | "true" | "false" | "null" ;
 	matrix = '[' <number> [','] [<number>] [','] [<number>] [','] [<number>] ']' ;
 	color = 'c' <matrix> ;
-	vecf = 'v' <matrix> ;
+	vec = 'v' <matrix> ;
 	string = '"' chars '"' | "'" chars "'" ;
 */
 
@@ -50,20 +50,6 @@ static NO_NULL void skip_multiline_comment(const char **strref)
 	}
 }
 
-static NO_NULL bool skip_whitespace(const char **strref)
-{
-	if( *strref==NULL || **strref==0 )
-		return false;
-	else {
-		while( **strref && is_whitespace(**strref) ) {
-			if( **strref=='\n' )
-				_g_cfg_err.curr_line++;
-			(*strref)++;
-		}
-		return **strref != 0;
-	}
-}
-
 static NO_NULL bool skip_ws_and_comments(const char **strref)
 {
 	if( *strref==NULL || **strref==0 ) {
@@ -75,7 +61,7 @@ static NO_NULL bool skip_ws_and_comments(const char **strref)
 				**strref==':' || **strref==',') ) // delimiters.
 		{
 			if( is_whitespace(**strref) )
-				skip_whitespace(strref);
+				*strref = skip_whitespace(*strref);
 			else if( **strref=='#' || (**strref=='/' && (*strref)[1]=='/') ) {
 				skip_single_comment(strref);
 				_g_cfg_err.curr_line++;
@@ -277,8 +263,7 @@ static bool harbol_cfg_parse_key_val(struct HarbolLinkMap *const restrict map, c
 		union {
 			struct HarbolVec4D vec4d;
 			union HarbolColor color;
-		} matrix_value;
-		memset(&matrix_value, 0, sizeof matrix_value);
+		} matrix_value = { {0.f, 0.f, 0.f, 0.f} };
 		
 		size_t iterations = 0;
 		while( **cfgcoderef && **cfgcoderef != ']' ) {
@@ -296,10 +281,10 @@ static bool harbol_cfg_parse_key_val(struct HarbolLinkMap *const restrict map, c
 					iterations++;
 				} else {
 					switch( iterations ) {
-						case 0: matrix_value.vec4d.x = (float)strtof(numstr.cstr, NULL); break;
-						case 1: matrix_value.vec4d.y = (float)strtof(numstr.cstr, NULL); break;
-						case 2: matrix_value.vec4d.z = (float)strtof(numstr.cstr, NULL); break;
-						case 3: matrix_value.vec4d.w = (float)strtof(numstr.cstr, NULL); break;
+						case 0: matrix_value.vec4d.x = strtof32(numstr.cstr, NULL); break;
+						case 1: matrix_value.vec4d.y = strtof32(numstr.cstr, NULL); break;
+						case 2: matrix_value.vec4d.z = strtof32(numstr.cstr, NULL); break;
+						case 3: matrix_value.vec4d.w = strtof32(numstr.cstr, NULL); break;
 					}
 					iterations++;
 				}
@@ -463,15 +448,27 @@ HARBOL_EXPORT struct HarbolLinkMap *harbol_cfg_parse_cstr(const char cfgcode[])
 	}
 }
 
+union ConfigVal {
+	uint8_t *restrict data;
+	struct HarbolLinkMap **restrict section;
+	struct HarbolString **restrict str;
+	floatmax_t *restrict f;
+	intmax_t *restrict i;
+	bool *restrict b;
+	union HarbolColor *restrict c;
+	struct HarbolVec4D *restrict v;
+};
+
 static void __harbol_cfgkey_del(struct HarbolVariant *const var)
 {
+	union ConfigVal cv = {var->data};
 	switch( var->tag ) {
 		case HarbolCfgType_Linkmap:
-			harbol_cfg_free((struct HarbolLinkMap**)var->data);
+			harbol_cfg_free(cv.section);
 			harbol_variant_clear(var, NULL);
 			break;
 		case HarbolCfgType_String:
-			harbol_string_free((struct HarbolString**)var->data);
+			harbol_string_free(cv.str);
 			harbol_variant_clear(var, NULL);
 			break;
 		default:
@@ -506,6 +503,8 @@ HARBOL_EXPORT struct HarbolString harbol_cfg_to_str(const struct HarbolLinkMap *
 	for( uindex_t i=0; i<map->vec.count; i++ ) {
 		struct HarbolKeyVal **const iter = harbol_vector_get(&map->vec, i);
 		const struct HarbolVariant *var = (const struct HarbolVariant *)(*iter)->data;
+		
+		const union ConfigVal cv = { var->data };
 		// using double pointer iterators as we need the key.
 		__concat_tabs(&str, tabs);
 		harbol_string_add_format(&str, "\"%s\": ", (*iter)->key.cstr);
@@ -516,7 +515,7 @@ HARBOL_EXPORT struct HarbolString harbol_cfg_to_str(const struct HarbolLinkMap *
 			case HarbolCfgType_Linkmap: {
 				harbol_string_add_cstr(&str, "{\n");
 				tabs++;
-				struct HarbolString inner_str = harbol_cfg_to_str(*(const struct HarbolLinkMap **)var->data);
+				struct HarbolString inner_str = harbol_cfg_to_str(*cv.section);
 				harbol_string_add_format(&str, "%s", inner_str.cstr);
 				__concat_tabs(&str, --tabs);
 				harbol_string_add_cstr(&str, "}\n");
@@ -524,27 +523,23 @@ HARBOL_EXPORT struct HarbolString harbol_cfg_to_str(const struct HarbolLinkMap *
 				break;
 			}
 			case HarbolCfgType_String:
-				harbol_string_add_format(&str, "\"%s\"\n", ((*(const struct HarbolString **)var->data))->cstr);
+				harbol_string_add_format(&str, "\"%s\"\n", (*cv.str)->cstr);
 				break;
 			case HarbolCfgType_Float:
-				harbol_string_add_format(&str, "%" PRIfMAX "\n", *((const floatmax_t *)var->data));
+				harbol_string_add_format(&str, "%" PRIfMAX "\n", *cv.f);
 				break;
 			case HarbolCfgType_Int:
-				harbol_string_add_format(&str, "%" PRIiMAX "\n", *((const intmax_t *)var->data));
+				harbol_string_add_format(&str, "%" PRIiMAX "\n", *cv.i);
 				break;
 			case HarbolCfgType_Bool:
-				harbol_string_add_cstr(&str, *((bool *)var->data) ? "true\n" : "false\n");
+				harbol_string_add_cstr(&str, *cv.b ? "true\n" : "false\n");
 				break;
-			case HarbolCfgType_Color: {
-				const struct { uint8_t r,g,b,a; } *color = (const void*)var->data;
-				harbol_string_add_format(&str, "c[ %u, %u, %u, %u ]\n", color->r, color->g, color->b, color->a);
+			case HarbolCfgType_Color:
+				harbol_string_add_format(&str, "c[ %u, %u, %u, %u ]\n", cv.c->bytes.r, cv.c->bytes.g, cv.c->bytes.b, cv.c->bytes.a);
 				break;
-			}
-			case HarbolCfgType_Vec4D: {
-				const struct { float x,y,z,w; } *vec4 = (const void*)var->data;
-				harbol_string_add_format(&str, "v[ %f, %f, %f, %f ]\n", vec4->x, vec4->y, vec4->z, vec4->w);
+			case HarbolCfgType_Vec4D:
+				harbol_string_add_format(&str, "v[ %" PRIf32 ", %" PRIf32 ", %" PRIf32 ", %" PRIf32 " ]\n", cv.v->x, cv.v->y, cv.v->z, cv.v->w);
 				break;
-			}
 		}
 	}
 	return str;
@@ -573,7 +568,7 @@ static NO_NULL bool harbol_cfg_parse_target_path(const char key[static 1], struc
 		} else iter--;
 	}
 	// now we save the target section and then use the resulting string.
-	while( *iter ) {
+	while( *iter != 0 ) {
 		if( *iter=='/' ) {
 			iter++;
 			continue;
@@ -607,7 +602,7 @@ static NO_NULL struct HarbolVariant *__get_var(struct HarbolLinkMap *const restr
 		while( itermap != NULL ) {
 			harbol_string_clear(&sectionstr);
 			// Patch: allow keys to use dot without interfering with dot path.
-			while( *iter ) {
+			while( *iter != 0 ) {
 				if( (*iter=='/' || *iter=='\\') && iter[1] && iter[1]=='.' ) {
 					iter++;
 					harbol_string_add_char(&sectionstr, *iter++);
@@ -826,35 +821,29 @@ static NO_NULL bool __harbol_cfg_build_file(const struct HarbolLinkMap *const ma
 		// using double pointer iterators as we need the key.
 		fprintf(file, "\"%s\": ", (*iter)->key.cstr);
 		
+		const union ConfigVal cv = {v->data};
 		switch( type ) {
 			case HarbolCfgType_Null:
 				fputs("null\n", file); break;
 			case HarbolCfgType_Linkmap:
 				fputs("{\n", file);
-				__harbol_cfg_build_file(*(struct HarbolLinkMap **)v->data, file, tabs+1);
+				__harbol_cfg_build_file(*cv.section, file, tabs+1);
 				__write_tabs(file, tabs);
 				fputs("}\n", file);
 				break;
 			
 			case HarbolCfgType_String:
-				fprintf(file, "\"%s\"\n", (*(struct HarbolString **)v->data)->cstr); break;
+				fprintf(file, "\"%s\"\n", (*cv.str)->cstr); break;
 			case HarbolCfgType_Float:
-				fprintf(file, "%" PRIfMAX "\n", *(floatmax_t *)v->data); break;
+				fprintf(file, "%" PRIfMAX "\n", *cv.f); break;
 			case HarbolCfgType_Int:
-				fprintf(file, "%" PRIiMAX "\n", *(intmax_t *)v->data); break;
+				fprintf(file, "%" PRIiMAX "\n", *cv.i); break;
 			case HarbolCfgType_Bool:
-				fprintf(file, "%s\n", (*(bool *)v->data) ? "true" : "false"); break;
-			
-			case HarbolCfgType_Color: {
-				struct { uint8_t r,g,b,a; } *color = (void*)v->data;
-				fprintf(file, "c[ %u, %u, %u, %u ]\n", color->r, color->g, color->b, color->a);
-				break;
-			}
-			case HarbolCfgType_Vec4D: {
-				struct { float x,y,z,w; } *vec4 = (void*)v->data;
-				fprintf(file, "v[ %f, %f, %f, %f ]\n", vec4->x, vec4->y, vec4->z, vec4->w);
-				break;
-			}
+				fprintf(file, "%s\n", (*cv.b) ? "true" : "false"); break;
+			case HarbolCfgType_Color:
+				fprintf(file, "c[ %u, %u, %u, %u ]\n", cv.c->bytes.r, cv.c->bytes.g, cv.c->bytes.b, cv.c->bytes.a); break;
+			case HarbolCfgType_Vec4D:
+				fprintf(file, "v[ %" PRIf32 ", %" PRIf32 ", %" PRIf32 ", %" PRIf32 " ]\n", cv.v->x, cv.v->y, cv.v->z, cv.v->w); break;
 		}
 	}
 	return true;

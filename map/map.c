@@ -44,7 +44,7 @@ HARBOL_EXPORT struct HarbolMap *harbol_map_new(const size_t datasize)
 
 HARBOL_EXPORT struct HarbolMap harbol_map_create(const size_t datasize)
 {
-	struct HarbolMap map = {NULL, 0, 0, datasize};
+	struct HarbolMap map = {.datasize = datasize};
 	return map;
 }
 
@@ -84,8 +84,8 @@ HARBOL_EXPORT bool harbol_map_insert(struct HarbolMap *const restrict map, const
 		if( kv==NULL ) {
 			return false;
 		} else {
-			const bool b = harbol_map_insert_kv(map, kv);
-			if( !b ) {
+			const bool result = harbol_map_insert_kv(map, kv);
+			if( !result ) {
 				harbol_kvpair_free(&kv, NULL);
 				return false;
 			}

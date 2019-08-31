@@ -28,7 +28,7 @@ union HarbolColor {
 };
 
 struct HarbolVec4D {
-	float x,y,z,w;
+	float32_t x,y,z,w;
 };
 
 

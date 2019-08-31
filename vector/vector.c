@@ -182,7 +182,7 @@ HARBOL_EXPORT size_t harbol_vector_count_item(const struct HarbolVector *const r
 	}
 }
 
-HARBOL_EXPORT index_t harbol_vector_index_of(const struct HarbolVector *v, void *const restrict val, const uindex_t starting_index)
+HARBOL_EXPORT index_t harbol_vector_index_of(const struct HarbolVector *const restrict v, void *const restrict val, const uindex_t starting_index)
 {
 	if( v->table==NULL || v->datasize==0 )
 		return -1;
