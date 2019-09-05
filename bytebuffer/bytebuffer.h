@@ -63,8 +63,8 @@ HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_del(struct HarbolByteBuf *buf, uind
 HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_to_file(const struct HarbolByteBuf *buf, FILE *file);
 HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_insert_from_file(struct HarbolByteBuf *buf, FILE *file);
 
-HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_append(struct HarbolByteBuf *bufA, struct HarbolByteBuf *bufB);
-HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_copy(struct HarbolByteBuf *bufA, struct HarbolByteBuf *bufB);
+HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_append(struct HarbolByteBuf *bufA, const struct HarbolByteBuf *bufB);
+HARBOL_EXPORT NO_NULL bool harbol_bytebuffer_copy(struct HarbolByteBuf *bufA, const struct HarbolByteBuf *bufB);
 /********************************************************************/
 
 
