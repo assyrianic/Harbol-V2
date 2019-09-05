@@ -192,7 +192,7 @@ HARBOL_EXPORT bool harbol_bytebuffer_insert_from_file(struct HarbolByteBuf *cons
 	}
 }
 
-HARBOL_EXPORT bool harbol_bytebuffer_append(struct HarbolByteBuf *const bufA, struct HarbolByteBuf *const bufB)
+HARBOL_EXPORT bool harbol_bytebuffer_append(struct HarbolByteBuf *const bufA, const struct HarbolByteBuf *const bufB)
 {
 	if( bufB->table==NULL )
 		return false;
@@ -206,7 +206,7 @@ HARBOL_EXPORT bool harbol_bytebuffer_append(struct HarbolByteBuf *const bufA, st
 	}
 }
 
-HARBOL_EXPORT bool harbol_bytebuffer_copy(struct HarbolByteBuf *const bufA, struct HarbolByteBuf *const bufB)
+HARBOL_EXPORT bool harbol_bytebuffer_copy(struct HarbolByteBuf *const bufA, const struct HarbolByteBuf *const bufB)
 {
 	if( bufB->table==NULL )
 		return false;
@@ -214,7 +214,7 @@ HARBOL_EXPORT bool harbol_bytebuffer_copy(struct HarbolByteBuf *const bufA, stru
 		if( bufB->count != bufA->count )
 			harbol_generic_vector_resizer(bufA, bufB->count, sizeof *bufA->table);
 		
-		memcpy(&bufA->table[0], &bufA->table[0], bufB->count);
+		memcpy(&bufA->table[0], &bufB->table[0], bufB->count);
 		bufA->count = bufB->count;
 		return true;
 	}
