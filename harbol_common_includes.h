@@ -412,13 +412,9 @@ static inline bool is_valid_ucn(const int32_t c)
 
 static inline NO_NULL NONNULL_RET const char *skip_whitespace(const char *str)
 {
-	if( *str==0 )
-		return str;
-	else {
-		while( *str != 0 && is_whitespace(*str) )
-			str++;
-		return str;
-	}
+	while( *str != 0 && is_whitespace(*str) )
+		str++;
+	return str;
 }
 
 #endif /* HARBOL_COMMON_INCLUDES_INCLUDED */
