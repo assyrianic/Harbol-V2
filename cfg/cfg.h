@@ -9,6 +9,7 @@ extern "C" {
 #include "../harbol_common_includes.h"
 #include "../linkmap/linkmap.h"
 #include "../variant/variant.h"
+#include "../lex/lex.h"
 
 
 enum HarbolCfgType {

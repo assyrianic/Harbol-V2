@@ -24,6 +24,7 @@
 * Plugin Manager - designed to be wrapped around to provide an easy-to-setup plugin API and plugin SDK.
 * Fixed Size floating-point types.
 * Vector-based Double Ended Queue (Veque!).
+* Lexing tools for C and Golang style numbers and strings.
 
 ### Future/Planned Features
 - [ ] Red-Black Tree.

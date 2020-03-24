@@ -19,6 +19,7 @@ void test_harbol_linkmap(void);
 void test_harbol_cfg(void);
 void test_harbol_plugins(void);
 void test_harbol_veque(void);
+void test_harbol_lex(void);
 
 FILE *g_harbol_debug_stream = NULL;
 
@@ -36,11 +37,11 @@ int main()
 	if( !g_harbol_debug_stream )
 		return -1;
 	
-	fprintf(g_harbol_debug_stream, "The Harbol Test Suite is using Harbol version %s | major: %u, minor: %u, patch: %u, phase: %c\n\n", HARBOL_VERSION_STRING, HARBOL_VERSION_MAJOR, HARBOL_VERSION_MINOR, HARBOL_VERSION_PATCH, HARBOL_VERSION_PHASE);
+	fprintf(g_harbol_debug_stream, "The Harbol Test Suite is using Harbol version %s | major: %u, minor: %u, patch: %u, phase: %s\n\n", HARBOL_VERSION_STRING, HARBOL_VERSION_MAJOR, HARBOL_VERSION_MINOR, HARBOL_VERSION_PATCH, HARBOL_VERSION_PHASE);
 	
 	fprintf(
 		g_harbol_debug_stream,
-		"float64 == double? %u\nfloat64_t == float? %u\nfloat32_t == float? %u | long double size: %zu\nfloatmax_t == long double? %zu\nfloatmax_t == double? %zu\nfloatmax_t == float? %zu\n\n",
+		"float64 == double? %u\nfloat64_t == float? %u\nfloat32_t == float? %u | long double size: %zu\nfloatmax_t == long double? %u\nfloatmax_t == double? %u\nfloatmax_t == float? %u\n\n",
 		sizeof(float64_t)==sizeof(double),
 		sizeof(float64_t)==sizeof(float),
 		sizeof(float32_t)==sizeof(float),
@@ -53,6 +54,7 @@ int main()
 	struct HarbolMemPool m = harbol_mempool_create(1000000);
 	g_pool = &m;
 #endif
+	
 	test_harbol_string();
 	test_harbol_vector();
 	test_harbol_unilist();
@@ -69,8 +71,9 @@ int main()
 	test_harbol_objpool();
 	test_harbol_cache();
 	test_harbol_mempool();
-	
 	test_harbol_veque();
+	
+	test_harbol_lex();
 	
 	fclose(g_harbol_debug_stream), g_harbol_debug_stream=NULL;
 #ifdef HARBOL_USE_MEMPOOL
@@ -1553,14 +1556,39 @@ void test_harbol_cfg(void)
 			} \
 		}, \
 		'colors': c[ 0xff, 0xff, 0xff, 0xaa ], \
-		'origin': v[0.0, 24.43, 25.0], \
+		'origin': v[10.0f, 24.43, 25.0, 0xA.p+2], \
 		'children': {}, \
 		'spouse': null \
+		'test_iota': { \
+		    '1': iota \
+		    '2': { \
+		        'a': iota \
+		        'b': Iota \
+		        'c': iota \
+		        'd': iota \
+		        'e': iota \
+		    } \
+		    '3': iota \
+		    '4': iota \
+		    '5': iota \
+		    '6': Iota \
+		    '7': Iota \
+		} \
+		'test_iota__again': { \
+		    '1': iota \
+		    '2': iota \
+		    '3': iota \
+		    '4': iota \
+		    '5': iota \
+		    '6': Iota \
+		    '7': Iota \
+		} \
 	}";
 	const clock_t start = clock();
 	struct HarbolLinkMap *larger_cfg = harbol_cfg_parse_cstr(test_cfg);
 	const clock_t end = clock();
 	printf("cfg parsing time: %f\n", (end-start)/(double)CLOCKS_PER_SEC);
+	
 	fprintf(g_harbol_debug_stream, "larger_cfg ptr valid?: '%s'\n", larger_cfg ? "yes" : "no");
 	if( larger_cfg ) {
 		fputs("\ncfg :: iterating realistic config.\n", g_harbol_debug_stream);
@@ -1741,4 +1769,240 @@ void test_harbol_veque(void)
 	fputs("\nveque :: test destruction.\n", g_harbol_debug_stream);
 	harbol_veque_clear(&i, NULL);
 	harbol_veque_free(&p, NULL);
+}
+
+void test_harbol_lex(void)
+{
+	if( !g_harbol_debug_stream )
+		return;
+	
+	fputs("\nlex tools :: test C hex.\n", g_harbol_debug_stream);
+	const char *c_hexs[] = {
+		"0X55", /// correct
+		"0X5fl", /// correct
+		"0x55LLU", /// correct
+		"0X5full", /// correct
+		"0x0.3p10", /// correct
+		"0x1.2p3", /// correct
+		"0x1p+1", /// correct
+		"0x1.b7p-1", /// correct
+		"0x3.3333333333334p-5", /// correct
+		"0x", /// bad
+		"0x.f", /// bad
+		"0x1.f", /// bad
+	};
+	for( const char **i=&c_hexs[0]; i<1[&c_hexs]; i++ ) {
+		struct HarbolString lexeme = harbol_string_create(NULL);
+		const char *end = NULL;
+		bool is_float = false;
+		const bool res = lex_c_style_hex(*i, &end, &lexeme, &is_float);
+		fprintf(g_harbol_debug_stream, "result: %s :: lexeme: '%s' | is float? %s\n", res ? "yes" : "no", lexeme.cstr, is_float ? "yes" : "no");
+		harbol_string_clear(&lexeme);
+	}
+	
+	fputs("\nlex tools :: test Go hex.\n", g_harbol_debug_stream);
+	const char *go_hex[] = {
+		"0xBadFace", /// correct
+		"0xBad_Face", /// correct
+		"0x_67_7a_2f_cc_40_c6", /// correct
+		"0x1p-2",       /// == 0.25
+		"0x2.p10",      /// == 2048.0
+		"0x1.Fp+0",     /// == 1.9375
+		"0X.8p-0",      /// == 0.5
+		"0X_1FFFP-16",  /// == 0.1249847412109375
+		"0x15e-2",      /// == 0x15e - 2 (integer subtraction)
+		"0x3.3333333333334p-5", /// correct
+		"0x.p1", /// bad
+		"0x1.5e-2", /// bad
+		"0x_67_7a_2f_cc_40_c6_", /// bad
+		"0_xBadFace", /// bad
+	};
+	for( const char **i=&go_hex[0]; i<1[&go_hex]; i++ ) {
+		struct HarbolString lexeme = harbol_string_create(NULL);
+		const char *end = NULL;
+		bool is_float = false;
+		const bool res = lex_go_style_hex(*i, &end, &lexeme, &is_float);
+		fprintf(g_harbol_debug_stream, "result: %s :: lexeme: '%s' | is float? %s\n", res ? "yes" : "no", lexeme.cstr, is_float ? "yes" : "no");
+		harbol_string_clear(&lexeme);
+	}
+	
+	fputs("\nlex tools :: test C decimal.\n", g_harbol_debug_stream);
+	const char *c_dec[] = {
+		"344ULL", /// correct
+		"33", /// correct
+		"33_45_34", /// correct
+		".0", /// correct
+		".344", /// correct
+		".34e4", /// correct
+		".34e4f", /// correct
+		"0.f", /// correct
+		"0.34e4f", /// correct
+		"3.-3", /// good
+		"3.", /// good
+		"3.e-3", /// good
+		"3.e--3", /// good
+		"0f", /// bad
+		".34ef", /// bad
+		"0.34ef", /// bad
+		"0.34e1ULL", /// bad
+		"34e1ULL", /// bad
+	};
+	for( const char **i=&c_dec[0]; i<1[&c_dec]; i++ ) {
+		struct HarbolString lexeme = harbol_string_create(NULL);
+		const char *end = NULL;
+		bool is_float = false;
+		const bool res = lex_c_style_decimal(*i, &end, &lexeme, &is_float);
+		fprintf(g_harbol_debug_stream, "result: %s :: lexeme: '%s' | is float? %s\n", res ? "yes" : "no", lexeme.cstr, is_float ? "yes" : "no");
+		harbol_string_clear(&lexeme);
+	}
+	
+	fputs("\nlex tools :: test Go decimal.\n", g_harbol_debug_stream);
+	const char *go_dec[] = {
+		"0.",
+		"72.40",
+		"072.40",
+		"2.71828",
+		"1.e+0",
+		"6.67428e-11",
+		"1E6",
+		".25",
+		".12345E+5",
+		"1_5.",
+		"0.15e+0_2",
+		"1_.5", /// bad
+		"1._5", /// bad
+		"1.5_e1", /// bad
+		"1.5e_1", /// bad
+		"1.5e1_" /// bad
+	};
+	for( const char **i=&go_dec[0]; i<1[&go_dec]; i++ ) {
+		struct HarbolString lexeme = harbol_string_create(NULL);
+		const char *end = NULL;
+		bool is_float = false;
+		const bool res = lex_go_style_decimal(*i, &end, &lexeme, &is_float);
+		fprintf(g_harbol_debug_stream, "result: %s :: lexeme: '%s' | is float? %s\n", res ? "yes" : "no", lexeme.cstr, is_float ? "yes" : "no");
+		harbol_string_clear(&lexeme);
+	}
+	
+	
+	fputs("\nlex tools :: test Go String.\n", g_harbol_debug_stream);
+	const char *go_strs[] = {
+		"`raw\\nstring`",
+		"\"foo\\x61 bar\"",
+		"\"foo\\141bar\"",
+		"\"foo\\u0710 bar\"",
+		"\"日本語\"",
+		"\"\\u65e5本\\U00008a9e\""
+	};
+	for( const char **i=&go_strs[0]; i<1[&go_strs]; i++ ) {
+		struct HarbolString lexeme = harbol_string_create(NULL);
+		const char *end = NULL;
+		const bool res = lex_go_style_str(*i, &end, &lexeme);
+		fprintf(g_harbol_debug_stream, "result: %s :: lexeme: '%s'\n", res ? "yes" : "no", lexeme.cstr);
+		harbol_string_clear(&lexeme);
+	}
+	
+	fputs("\nlex tools :: test C octal.\n", g_harbol_debug_stream);
+	const char *c_oct[] = {
+		"0553", /// correct
+		"0553ULL", /// correct
+		"0553u", /// correct
+		"0553llu", /// correct
+		"0777", /// correct
+		"0553LUL", /// bad
+		"553", /// bad
+		"078", /// bad
+	};
+	for( const char **i=&c_oct[0]; i<1[&c_oct]; i++ ) {
+		struct HarbolString lexeme = harbol_string_create(NULL);
+		const char *end = NULL;
+		const bool res = lex_c_style_octal(*i, &end, &lexeme);
+		fprintf(g_harbol_debug_stream, "result: %s :: lexeme: '%s'\n", res ? "yes" : "no", lexeme.cstr);
+		harbol_string_clear(&lexeme);
+	}
+	
+	fputs("\nlex tools :: test Go octal.\n", g_harbol_debug_stream);
+	const char *go_oct[] = {
+		"0o553", /// correct
+		"0o777", /// correct
+		"0o78", /// bad
+		"0o553ULL", /// bad
+		"0o553LUL", /// bad
+		"0o553ull", /// bad
+		"553", /// bad
+		"0553", /// bad
+	};
+	for( const char **i=&go_oct[0]; i<1[&go_oct]; i++ ) {
+		struct HarbolString lexeme = harbol_string_create(NULL);
+		const char *end = NULL;
+		const bool res = lex_go_style_octal(*i, &end, &lexeme);
+		fprintf(g_harbol_debug_stream, "result: %s :: lexeme: '%s'\n", res ? "yes" : "no", lexeme.cstr);
+		harbol_string_clear(&lexeme);
+	}
+	
+	
+	fputs("\nlex tools :: test C binary.\n", g_harbol_debug_stream);
+	const char *c_binary[] = {
+		"0b11101", /// correct
+		"0b101ULL", /// correct
+		"0b1u", /// correct
+		"0b101llu", /// correct
+		"b1101010", /// bad
+		"0b10002", /// bad
+		"011101010", /// bad
+	};
+	for( const char **i=&c_binary[0]; i<1[&c_binary]; i++ ) {
+		struct HarbolString lexeme = harbol_string_create(NULL);
+		const char *end = NULL;
+		const bool res = lex_c_style_binary(*i, &end, &lexeme);
+		fprintf(g_harbol_debug_stream, "result: %s :: lexeme: '%s'\n", res ? "yes" : "no", lexeme.cstr);
+		harbol_string_clear(&lexeme);
+	}
+	
+	fputs("\nlex tools :: test Go binary.\n", g_harbol_debug_stream);
+	const char *go_binary[] = {
+		"0b11101", /// correct
+		"b1101010", /// bad
+		"0b10002", /// bad
+		"011101010", /// bad
+	};
+	for( const char **i=&go_binary[0]; i<1[&go_binary]; i++ ) {
+		struct HarbolString lexeme = harbol_string_create(NULL);
+		const char *end = NULL;
+		const bool res = lex_go_style_binary(*i, &end, &lexeme);
+		fprintf(g_harbol_debug_stream, "result: %s :: lexeme: '%s'\n", res ? "yes" : "no", lexeme.cstr);
+		harbol_string_clear(&lexeme);
+	}
+	
+	fputs("\nlex tools :: test C various numbers.\n", g_harbol_debug_stream);
+	const char *c_nums[] = {
+		"0X55", /// correct
+		"0X5fl", /// correct
+		"0x55LLU", /// correct
+		"0X5full", /// correct
+		"0X_CAFE_BABE", /// correct
+		"0x0.3p10", /// correct
+		"0x1.2p3", /// correct
+		"0x1p+1", /// correct
+		"0x1.b7p-1", /// correct
+		"0x0.3_p10", /// correct
+		"0x3.3333333333334p-5", /// correct
+		"0x1.f", /// bad
+		"0553", /// correct
+		"0553ULL", /// correct
+		"0553u", /// correct
+		"0553llu", /// correct
+		"0777", /// correct
+		"0553LUL", /// bad
+		"553", /// bad
+		"078", /// bad
+	};
+	for( const char **i=&c_nums[0]; i<1[&c_nums]; i++ ) {
+		struct HarbolString lexeme = harbol_string_create(NULL);
+		const char *end = NULL;
+		bool is_float = false;
+		const bool res = lex_c_style_number(*i, &end, &lexeme, &is_float);
+		fprintf(g_harbol_debug_stream, "result: %s :: lexeme: '%s' | is float? %s\n", res ? "yes" : "no", lexeme.cstr, is_float ? "yes" : "no");
+		harbol_string_clear(&lexeme);
+	}
 }

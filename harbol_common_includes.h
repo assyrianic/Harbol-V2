@@ -60,11 +60,15 @@ typedef struct { const char *cstr; const size_t len; } string_t;
 #	if FLT_MANT_DIG==24
 #		define __float32_t_defined
 #		define PRIf32 "f"
+#		define SCNf32 "f"
+#		define SCNxf32 "a"
 #		define strtof32  strtof
 		typedef float float32_t;
 #	elif DBL_MANT_DIG==24
 #		define __float32_t_defined
 #		define PRIf32 "f"
+#		define SCNf32 "lf"
+#		define SCNxf32 "la"
 #		define strtof32  strtod
 		typedef double float32_t;
 #	else
@@ -81,17 +85,23 @@ typedef struct { const char *cstr; const size_t len; } string_t;
 #	if DBL_MANT_DIG==53
 #		define __float64_t_defined
 #		define PRIf64    "f"
+#		define SCNf64    "lf"
+#		define SCNxf64   "la"
 #		define strtof64  strtod
 		typedef double float64_t;
 #	elif LDBL_MANT_DIG==53
 #		define __float64_t_defined
 #		define PRIf64    "Lf"
+#		define SCNf64    "Lf"
+#		define SCNxf64   "La"
 #		define strtof64  strtold
 		typedef long double float64_t;
 // This is unlikely but check just in case.
 #	elif FLT_MANT_DIG==53
 #		define __float64_t_defined
 #		define PRIf64    "f"
+#		define SCNf64    "f"
+#		define SCNxf64   "a"
 #		define strtof64  strtof
 		typedef float float64_t;
 #	else
@@ -108,11 +118,15 @@ typedef struct { const char *cstr; const size_t len; } string_t;
 #	define PRIfPTR    "f"
 #	if defined(HARBOL64)
 #		define __floatptr_t_defined
-#		define strtofptr  strtod
+#		define strtofptr  strtof64
+#		define SCNfPTR    SCNf64
+#		define SCNxfPTR   SCNxf64
 		typedef float64_t floatptr_t;
 #	elif defined(HARBOL32)
 #		define __floatptr_t_defined
-#		define strtofptr  strtof
+#		define strtofptr  strtof32
+#		define SCNfPTR    SCNf32
+#		define SCNxfPTR   SCNxf32
 		typedef float32_t floatptr_t;
 #	else
 #		error "no appropriate floatptr implementation"
@@ -128,16 +142,22 @@ typedef struct { const char *cstr; const size_t len; } string_t;
 #	if LDBL_MANT_DIG > DBL_MANT_DIG
 #		define __floatmax_t_defined
 #		define PRIfMAX    "Lf"
+#		define SCNfMAX    "Lf"
+#		define SCNxfMAX   "La"
 #		define strtofmax  strtold
 		typedef long double floatmax_t;
 #	elif DBL_MANT_DIG==LDBL_MANT_DIG && DBL_MANT_DIG > FLT_MANT_DIG
 #		define __floatmax_t_defined
 #		define PRIfMAX    "f"
+#		define SCNfMAX    "lf"
+#		define SCNxfMAX   "la"
 #		define strtofmax  strtod
 		typedef double floatmax_t;
 #	elif DBL_MANT_DIG==FLT_MANT_DIG
 #		define __floatmax_t_defined
 #		define PRIfMAX    "f"
+#		define SCNfMAX    "f"
+#		define SCNxfMAX   "a"
 #		define strtofmax  strtof
 		typedef float floatmax_t;
 #	else
@@ -245,7 +265,7 @@ static inline size_t harbol_align_size(const size_t size, const size_t align)
 
 // these are NOT cryptographic hashes.
 // use ONLY FOR HASH TABLE IMPLEMENTATIONS.
-static inline NO_NULL size_t string_hash(const char key[static 1])
+static inline NO_NULL size_t string_hash(const char key[])
 {
 	size_t h = 0;
 	while( *key != '\0' )
@@ -327,7 +347,7 @@ union HarbolBinIter {
 	union HarbolBinIter *self;
 };
 
-static inline NO_NULL uint8_t *make_buffer_from_binary(const char file_name[restrict static 1])
+static inline NO_NULL uint8_t *make_buffer_from_binary(const char file_name[restrict])
 {
 	FILE *restrict file = fopen(file_name, "rb");
 	if( file==NULL )
@@ -351,7 +371,7 @@ static inline NO_NULL uint8_t *make_buffer_from_binary(const char file_name[rest
 	}
 }
 
-static inline NO_NULL char *make_buffer_from_text(const char file_name[restrict static 1])
+static inline NO_NULL char *make_buffer_from_text(const char file_name[restrict])
 {
 	FILE *restrict file = fopen(file_name, "r");
 	if( file==NULL )
@@ -375,46 +395,11 @@ static inline NO_NULL char *make_buffer_from_text(const char file_name[restrict 
 	}
 }
 
-static inline bool is_decimal(const int c)
-{
-	return( c>='0' && c<='9' );
-}
-
-static inline bool is_octal(const int c)
-{
-	return( c>='0' && c<='7' );
-}
-
-static inline bool is_hex(const int c)
-{
-	return( (c>='a' && c<='f') || (c>='A' && c<='F') || is_decimal(c) );
-}
-
-static inline bool is_binary(const int c)
-{
-	return( c=='0' || c=='1' );
-}
-
-static inline bool is_whitespace(const int c)
-{
-	return( c==' ' || c=='\t' || c=='\r' || c=='\v' || c=='\f' || c=='\n' );
-}
 
 static inline bool is_aligned(const void *const ptr, const size_t bytes)
 {
 	return ((uintptr_t)ptr & (bytes-1))==0;
 }
 
-static inline bool is_valid_ucn(const int32_t c)
-{
-	return ( 0xD800<=c && c<=0xDFFF ) ? false : ( 0xA0<=c||c=='$'||c=='@'||c=='`' );
-}
-
-static inline NO_NULL NONNULL_RET const char *skip_whitespace(const char *str)
-{
-	while( *str != 0 && is_whitespace(*str) )
-		str++;
-	return str;
-}
 
 #endif /* HARBOL_COMMON_INCLUDES_INCLUDED */

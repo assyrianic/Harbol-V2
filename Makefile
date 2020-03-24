@@ -1,6 +1,8 @@
-CC = clang-6.0
-CFLAGS = -Wall -Wextra -std=c99 -s -O2
-TESTFLAGS = -Wall -Wextra -fsanitize=undefined -std=c99 -g -O2
+#CC = clang-6.0
+CC = gcc
+CFLAGS = -Wall -Wextra -pedantic -std=c99 -s -O2
+TFLAGS = -Wall -Wextra -pedantic -std=c99 -g -O2
+# -fsanitize=undefined 
 
 LIB_NAME = harbol
 
@@ -23,6 +25,7 @@ SRCS += variant/variant.c
 SRCS += cfg/cfg.c
 SRCS += plugins/plugins.c
 SRCS += veque/veque.c
+SRCS += lex/lex.c
 
 OBJS = $(SRCS:.c=.o)
 
@@ -44,6 +47,7 @@ harbol_static:
 	+$(MAKE) -C cfg
 	+$(MAKE) -C plugins
 	+$(MAKE) -C veque
+	+$(MAKE) -C lex
 	ar cr lib$(LIB_NAME).a $(OBJS)
 
 harbol_shared:
@@ -64,10 +68,11 @@ harbol_shared:
 	+$(MAKE) -C cfg
 	+$(MAKE) -C plugins
 	+$(MAKE) -C veque
+	+$(MAKE) -C lex
 	$(CC) -shared -o lib$(LIB_NAME).so $(OBJS)
 
 test:
-	$(CC) $(TESTFLAGS) $(SRCS) test_suite.c -o $(LIB_NAME)_test $(DEPS)
+	$(CC) $(TFLAGS) $(SRCS) test_suite.c -o harbol_test_program $(DEPS)
 
 debug:
 	+$(MAKE) -C stringobj debug
@@ -87,6 +92,7 @@ debug:
 	+$(MAKE) -C cfg debug
 	+$(MAKE) -C plugins debug
 	+$(MAKE) -C veque debug
+	+$(MAKE) -C lex debug
 	ar cr lib$(LIB_NAME).a $(OBJS)
 
 debug_shared:
@@ -107,6 +113,7 @@ debug_shared:
 	+$(MAKE) -C cfg debug
 	+$(MAKE) -C plugins debug
 	+$(MAKE) -C veque debug
+	+$(MAKE) -C lex debug
 	$(CC) -shared -o lib$(LIB_NAME).so $(OBJS)
 
 clean:
@@ -127,4 +134,5 @@ clean:
 	+$(MAKE) -C cfg clean
 	+$(MAKE) -C plugins clean
 	+$(MAKE) -C veque clean
+	+$(MAKE) -C lex clean
 	$(RM) *.o

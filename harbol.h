@@ -1,13 +1,13 @@
 #ifndef HARBOL_INCLUDED
 #	define HARBOL_INCLUDED
 #	define HARBOL_VERSION_MAJOR    2
-#	define HARBOL_VERSION_MINOR    3
+#	define HARBOL_VERSION_MINOR    6
 #	define HARBOL_VERSION_PATCH    0
-#	define HARBOL_VERSION_PHASE    'B'
-#	define STR_HELPER(x)    #x
+#	define HARBOL_VERSION_PHASE    "beta"
+#	define STR_HELPER(x)           #x
 #	define STR(x)    STR_HELPER(x)
 #	define HARBOL_VERSION_STRING \
-			STR(HARBOL_VERSION_MAJOR) "." STR(HARBOL_VERSION_MINOR) "." STR(HARBOL_VERSION_PATCH) " " STR(HARBOL_VERSION_PHASE)
+			STR(HARBOL_VERSION_MAJOR) "." STR(HARBOL_VERSION_MINOR) "." STR(HARBOL_VERSION_PATCH) " " HARBOL_VERSION_PHASE
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,6 +85,10 @@ extern "C" {
 
 /************* Vector-based Double Ended Queue *************/
 #include "veque/veque.h"
+/*********************************************************/
+
+/************* Lexing Tools *************/
+#include "lex/lex.h"
 /*********************************************************/
 
 #ifdef __cplusplus

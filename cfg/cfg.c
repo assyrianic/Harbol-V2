@@ -7,10 +7,9 @@
 /* CFG Parser in EBNF grammar
 	keyval = <string> [':'] (<value>|<section>) [','] ;
 	section = '{' *<keyval> '}' ;
-	value = <string> | <number> | <color> | <vec> | "true" | "false" | "null" ;
+	value = <string> | <number> | <vec> | "true" | "false" | "null" | "iota" ;
 	matrix = '[' <number> [','] [<number>] [','] [<number>] [','] [<number>] ']' ;
-	color = 'c' <matrix> ;
-	vec = 'v' <matrix> ;
+	vec = ('v' | 'c') <matrix> ;
 	string = '"' chars '"' | "'" chars "'" ;
 */
 
@@ -23,50 +22,30 @@ static struct {
 	size_t count, curr_line;
 } _g_cfg_err;
 
+static struct {
+	intmax_t global, *local;
+} _g_iota;
 
-static NO_NULL void skip_single_comment(const char **strref)
-{
-	if( *strref==NULL || **strref==0 )
-		return;
-	else for(; **strref != '\n'; (*strref)++ );
-}
-
-static NO_NULL void skip_multiline_comment(const char **strref)
-{
-	if( *strref==NULL || **strref==0 )
-		return;
-	else {
-		// skip past '/' && '*'
-		*strref += 2;
-		do {
-			if( **strref==0 || (*strref)[1]==0 )
-				break;
-			if( **strref=='\n' )
-				_g_cfg_err.curr_line++;
-			(*strref)++;
-		} while( !(**strref=='*' && (*strref)[1]=='/') );
-		if( **strref && (*strref)[1] )
-			*strref += 2;
-	}
-}
 
 static NO_NULL bool skip_ws_and_comments(const char **strref)
 {
 	if( *strref==NULL || **strref==0 ) {
 		return false;
 	} else {
-		while( **strref && (is_whitespace(**strref) || // white space
+		while( **strref != 0 && (is_whitespace(**strref) || // white space
 				**strref=='#' || (**strref=='/' && (*strref)[1]=='/') || // single line comment
 				(**strref=='/' && (*strref)[1]=='*') || // multi-line comment
 				**strref==':' || **strref==',') ) // delimiters.
 		{
-			if( is_whitespace(**strref) )
-				*strref = skip_whitespace(*strref);
-			else if( **strref=='#' || (**strref=='/' && (*strref)[1]=='/') ) {
-				skip_single_comment(strref);
+			if( is_whitespace(**strref) ) {
+				if( **strref=='\n' )
+					_g_cfg_err.curr_line++;
+				*strref = skip_chars(*strref, is_whitespace);
+			} else if( **strref=='#' || (**strref=='/' && (*strref)[1]=='/') ) {
+				*strref = skip_single_line_comment(*strref);
 				_g_cfg_err.curr_line++;
 			} else if( **strref=='/' && (*strref)[1]=='*' )
-				skip_multiline_comment(strref);
+				*strref = skip_multi_line_comment(*strref, "*/", sizeof "*/"-1);
 			else if( **strref==':' || **strref==',' )
 				(*strref)++;
 		}
@@ -74,28 +53,7 @@ static NO_NULL bool skip_ws_and_comments(const char **strref)
 	}
 }
 
-static NO_NULL int32_t _lex_hex_escape_char(const char **restrict strref)
-{
-	int32_t r = 0;
-	if( !is_hex(**strref) ) {
-		if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
-			harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: \\x escape hex with no digits! '%c'. Line: %zu\n", **strref, _g_cfg_err.curr_line);
-	} else {
-		for(; **strref; (*strref)++ ) {
-			const char c = **strref;
-			if( c>='0' && c<='9' )
-				r = (r << 4) | (c - '0');
-			else if( c>='a' && c<='f' )
-				r = (r << 4) | (c - 'a' + 10);
-			else if( c>='A' && c<='F' )
-				r = (r << 4) | (c - 'A' + 10);
-			else return r;
-		}
-	}
-	return r;
-}
-
-
+/*
 static NEVER_NULL(1) bool _lex_string(const char **restrict strref, struct HarbolString *const restrict str)
 {
 	if( *strref==NULL || **strref==0 || str==NULL )
@@ -106,7 +64,7 @@ static NEVER_NULL(1) bool _lex_string(const char **restrict strref, struct Harbo
 		return false;
 	}
 	const char quote = *(*strref)++;
-	while( **strref && **strref != quote ) {
+	while( **strref != 0 && **strref != quote ) {
 		const char chrval = *(*strref)++;
 		if( chrval=='\\' ) {
 			const char chr = *(*strref)++;
@@ -119,7 +77,24 @@ static NEVER_NULL(1) bool _lex_string(const char **restrict strref, struct Harbo
 				case 'n': harbol_string_add_char(str, '\n'); break;
 				case 'f': harbol_string_add_char(str, '\f'); break;
 				case 's': harbol_string_add_char(str, ' '); break;
-				case 'x': harbol_string_add_char(str, (char)_lex_hex_escape_char(strref)); break;
+				case 'x': {
+					const int32_t h = lex_hex_escape_char(*strref, strref);
+					if( h<0 ) {
+						if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
+							harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: bad hex escape character: '%c'. Line: %zu\n", **strref, _g_cfg_err.curr_line);
+						return false;
+					} else write_utf8_str(str, h);
+					break;
+				}
+				case 'u': case 'U': {
+					const int32_t h = lex_unicode_char(*strref, strref, chr=='u' ? sizeof(int16_t) : sizeof(int32_t));
+					if( h<0 ) {
+						if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
+							harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: bad unicode character: '%c'. Line: %zu\n", **strref, _g_cfg_err.curr_line);
+						return false;
+					} else write_utf8_str(str, h);
+					break;
+				}
 				default: harbol_string_add_char(str, chr);
 			}
 		}
@@ -133,6 +108,7 @@ static NEVER_NULL(1) bool _lex_string(const char **restrict strref, struct Harbo
 		harbol_string_copy_cstr(str, "");
 	return **strref != 0;
 }
+*/
 
 static bool NO_NULL _lex_number(const char **restrict strref, struct HarbolString *const restrict str, enum HarbolCfgType *const typeref)
 {
@@ -146,47 +122,20 @@ static bool NO_NULL _lex_number(const char **restrict strref, struct HarbolStrin
 		if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
 			harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: invalid initial numeric digit: '%c'. Line: %zu\n", **strref, _g_cfg_err.curr_line);
 		return false;
-	} else if( **strref=='0' ) {
-		harbol_string_add_char(str, *(*strref)++);
-		const char numtype = *(*strref)++;
-		harbol_string_add_char(str, numtype);
-		*typeref = HarbolCfgType_Int;
-		switch( numtype ) {
-			case 'X': case 'x': // hex
-				harbol_string_add_char(str, *(*strref)++);
-				while( is_hex(**strref) )
-					harbol_string_add_char(str, *(*strref)++);
-				break;
-			case '.': // float
-				*typeref = HarbolCfgType_Float;
-				harbol_string_add_char(str, *(*strref)++);
-				while( is_decimal(**strref) || **strref=='e' || **strref=='E' || **strref=='f' || **strref=='F' )
-					harbol_string_add_char(str, *(*strref)++);
-				break;
-			default: // octal
-				while( is_octal(**strref) )
-					harbol_string_add_char(str, *(*strref)++);
+	} else {
+		bool is_float = false;
+		const char *end = NULL;
+		const bool result = lex_c_style_number(*strref, &end, str, &is_float);
+		if( !result ) {
+			if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
+				harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: invalid number. Line: %zu\n", **strref, _g_cfg_err.curr_line);
+			return false;
+		} else {
+			*strref = end;
+			*typeref = (is_float) ? HarbolCfgType_Float : HarbolCfgType_Int;
+			return str->len > 0;
 		}
 	}
-	else if( is_decimal(**strref) ) { // numeric value. Check if float possibly.
-		*typeref = HarbolCfgType_Int;
-		while( is_decimal(**strref) )
-			harbol_string_add_char(str, *(*strref)++);
-		
-		if( **strref=='.' ) { // definitely float value.
-			*typeref = HarbolCfgType_Float;
-			harbol_string_add_char(str, *(*strref)++);
-			while( is_decimal(**strref) || **strref=='e' || **strref=='E' || **strref=='f' || **strref=='F' )
-				harbol_string_add_char(str, *(*strref)++);
-		}
-	}
-	else if( **strref=='.' ) { // float value.
-		*typeref = HarbolCfgType_Float;
-		harbol_string_add_char(str, *(*strref)++);
-		while( is_decimal(**strref) || **strref=='e' || **strref=='E' )
-			harbol_string_add_char(str, *(*strref)++);
-	}
-	return str->len > 0;
 }
 
 static NO_NULL bool harbol_cfg_parse_section(struct HarbolLinkMap *, const char **);
@@ -199,16 +148,16 @@ static bool harbol_cfg_parse_key_val(struct HarbolLinkMap *const restrict map, c
 		if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
 			harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: invalid config buffer!\n");
 		return false;
-	} else if( !**cfgcoderef || !skip_ws_and_comments(cfgcoderef) )
+	} else if( **cfgcoderef==0 || !skip_ws_and_comments(cfgcoderef) )
 		return false;
-	else if( **cfgcoderef!='"' && **cfgcoderef!='\'' ) {
+	else if( **cfgcoderef != '"' && **cfgcoderef != '\'' ) {
 		if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
 			harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: missing beginning quote for key '%c'. Line: %zu\n", **cfgcoderef, _g_cfg_err.curr_line);
 		return false;
 	}
 	
 	struct HarbolString keystr = {NULL, 0};
-	const bool strresult = _lex_string(cfgcoderef, &keystr);
+	const bool strresult = lex_c_style_str(*cfgcoderef, cfgcoderef, &keystr);
 	if( !strresult ) {
 		if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
 			harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: invalid string key '%s'. Line: %zu\n", keystr.cstr, _g_cfg_err.curr_line);
@@ -225,16 +174,19 @@ static bool harbol_cfg_parse_key_val(struct HarbolLinkMap *const restrict map, c
 	bool res = false;
 	// it's a section!
 	if( **cfgcoderef=='{' ) {
+		intmax_t *const old = _g_iota.local;
+		_g_iota.local = &(intmax_t){0};
 		struct HarbolLinkMap *subsection = harbol_linkmap_new(sizeof(struct HarbolVariant));
 		res = harbol_cfg_parse_section(subsection, cfgcoderef);
 		struct HarbolVariant var = harbol_variant_create(&subsection, sizeof(struct HarbolLinkMap *), HarbolCfgType_Linkmap);
 		const bool inserted = harbol_linkmap_insert(map, keystr.cstr, &var);
 		if( !inserted )
 			harbol_variant_clear(&var, (void(*)(void**))&harbol_cfg_free);
+		_g_iota.local = old;
 	} else if( **cfgcoderef=='"'||**cfgcoderef=='\'' ) {
 		// string value.
 		struct HarbolString *str = harbol_string_new("");
-		res = _lex_string(cfgcoderef, str);
+		res = lex_c_style_str(*cfgcoderef, cfgcoderef, str);
 		if( !res ) {
 			if( str==NULL ) {
 				if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
@@ -266,7 +218,7 @@ static bool harbol_cfg_parse_key_val(struct HarbolLinkMap *const restrict map, c
 		} matrix_value = { {0.f, 0.f, 0.f, 0.f} };
 		
 		size_t iterations = 0;
-		while( **cfgcoderef && **cfgcoderef != ']' ) {
+		while( **cfgcoderef != 0 && **cfgcoderef != ']' ) {
 			struct HarbolString numstr = {NULL, 0};
 			enum HarbolCfgType type = HarbolCfgType_Null;
 			const bool result = _lex_number(cfgcoderef, &numstr, &type);
@@ -280,11 +232,13 @@ static bool harbol_cfg_parse_key_val(struct HarbolLinkMap *const restrict map, c
 					}
 					iterations++;
 				} else {
+					/// gotta use `sscanf` for possible hex floats.
+					float32_t f = 0;
 					switch( iterations ) {
-						case 0: matrix_value.vec4d.x = strtof32(numstr.cstr, NULL); break;
-						case 1: matrix_value.vec4d.y = strtof32(numstr.cstr, NULL); break;
-						case 2: matrix_value.vec4d.z = strtof32(numstr.cstr, NULL); break;
-						case 3: matrix_value.vec4d.w = strtof32(numstr.cstr, NULL); break;
+						case 0: sscanf(numstr.cstr, "%" SCNxf32 "", &f); matrix_value.vec4d.x = f; break;
+						case 1: sscanf(numstr.cstr, "%" SCNxf32 "", &f); matrix_value.vec4d.y = f; break;
+						case 2: sscanf(numstr.cstr, "%" SCNxf32 "", &f); matrix_value.vec4d.z = f; break;
+						case 3: sscanf(numstr.cstr, "%" SCNxf32 "", &f); matrix_value.vec4d.w = f; break;
 					}
 					iterations++;
 				}
@@ -298,7 +252,7 @@ static bool harbol_cfg_parse_key_val(struct HarbolLinkMap *const restrict map, c
 			}
 			skip_ws_and_comments(cfgcoderef);
 		}
-		if( !**cfgcoderef ) {
+		if( **cfgcoderef==0 ) {
 			if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
 				harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: unexpected end of file with missing ending ']'. Line: %zu\n", _g_cfg_err.curr_line);
 			return false;
@@ -312,7 +266,7 @@ static bool harbol_cfg_parse_key_val(struct HarbolLinkMap *const restrict map, c
 		// true bool value.
 		if( strncmp("true", *cfgcoderef, sizeof("true")-1) ) {
 			if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
-				harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: invalid word value, only 'true', 'false' or 'null' are allowed. Line: %zu\n", _g_cfg_err.curr_line);
+				harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: invalid word value, only 'true', 'false', 'null', 'Iota', and 'iota' are allowed. Line: %zu\n", _g_cfg_err.curr_line);
 			harbol_string_clear(&keystr);
 			return false;
 		}
@@ -323,7 +277,7 @@ static bool harbol_cfg_parse_key_val(struct HarbolLinkMap *const restrict map, c
 		// false bool value
 		if( strncmp("false", *cfgcoderef, sizeof("false")-1) ) {
 			if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
-				harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: invalid word value, only 'true', 'false' or 'null' are allowed. Line: %zu\n", _g_cfg_err.curr_line);
+				harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: invalid word value, only 'true', 'false', 'null', 'Iota', and 'iota' are allowed. Line: %zu\n", _g_cfg_err.curr_line);
 			harbol_string_clear(&keystr);
 			return false;
 		}
@@ -334,12 +288,34 @@ static bool harbol_cfg_parse_key_val(struct HarbolLinkMap *const restrict map, c
 		// null value.
 		if( strncmp("null", *cfgcoderef, sizeof("null")-1) ) {
 			if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
-				harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: invalid word value, only 'true', 'false' or 'null' are allowed. Line: %zu\n", _g_cfg_err.curr_line);
+				harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: invalid word value, only 'true', 'false', 'null', 'Iota', and 'iota' are allowed. Line: %zu\n", _g_cfg_err.curr_line);
 			harbol_string_clear(&keystr);
 			return false;
 		}
 		*cfgcoderef += sizeof("null") - 1;
 		struct HarbolVariant var = harbol_variant_create(&(char){0}, sizeof(char), HarbolCfgType_Null);
+		res = harbol_linkmap_insert(map, keystr.cstr, &var);
+	} else if( **cfgcoderef=='I' ) {
+		// global iota value.
+		if( strncmp("Iota", *cfgcoderef, sizeof("Iota")-1) ) {
+			if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
+				harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: invalid word value, only 'true', 'false', 'null', 'Iota', and 'iota' are allowed. Line: %zu\n", _g_cfg_err.curr_line);
+			harbol_string_clear(&keystr);
+			return false;
+		}
+		*cfgcoderef += sizeof("Iota") - 1;
+		struct HarbolVariant var = harbol_variant_create(&(intmax_t){_g_iota.global++}, sizeof(intmax_t), HarbolCfgType_Int);
+		res = harbol_linkmap_insert(map, keystr.cstr, &var);
+	} else if( **cfgcoderef=='i' ) {
+		// local iota value.
+		if( strncmp("iota", *cfgcoderef, sizeof("iota")-1) ) {
+			if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
+				harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: invalid word value, only 'true', 'false', 'null', 'Iota', and 'iota' are allowed. Line: %zu\n", _g_cfg_err.curr_line);
+			harbol_string_clear(&keystr);
+			return false;
+		}
+		*cfgcoderef += sizeof("iota") - 1;
+		struct HarbolVariant var = harbol_variant_create(&(intmax_t){(*_g_iota.local)++}, sizeof(intmax_t), HarbolCfgType_Int);
 		res = harbol_linkmap_insert(map, keystr.cstr, &var);
 	} else if( is_decimal(**cfgcoderef) || **cfgcoderef=='.' || **cfgcoderef=='-' || **cfgcoderef=='+' ) {
 		// numeric value.
@@ -370,8 +346,14 @@ static bool harbol_cfg_parse_number(struct HarbolLinkMap *const restrict map, co
 		harbol_string_clear(&numstr);
 		return result;
 	} else {
-		struct HarbolVariant var = ( type==HarbolCfgType_Float ) ?
-			harbol_variant_create(&(floatmax_t){strtofmax(numstr.cstr, NULL)}, sizeof(floatmax_t), HarbolCfgType_Float) : harbol_variant_create(&(intmax_t){strtoll(numstr.cstr, NULL, 0)}, sizeof(intmax_t), HarbolCfgType_Int);
+		struct HarbolVariant var = { 0 };
+		if( type==HarbolCfgType_Float ) {
+			floatmax_t f = 0;
+			sscanf(numstr.cstr, "%" SCNxfMAX "", &f);
+			var = harbol_variant_create(&f, sizeof(floatmax_t), type);
+		} else {
+			var = harbol_variant_create(&(intmax_t){strtoll(numstr.cstr, NULL, 0)}, sizeof(intmax_t), HarbolCfgType_Int);
+		}
 		harbol_string_clear(&numstr);
 		return harbol_linkmap_insert(map, key->cstr, &var);
 	}
@@ -388,12 +370,12 @@ static bool harbol_cfg_parse_section(struct HarbolLinkMap *const restrict map, c
 	(*cfgcoderef)++;
 	skip_ws_and_comments(cfgcoderef);
 	
-	while( **cfgcoderef && **cfgcoderef != '}' ) {
+	while( **cfgcoderef != 0 && **cfgcoderef != '}' ) {
 		const bool res = harbol_cfg_parse_key_val(map, cfgcoderef);
 		if( !res )
 			return false;
 	}
-	if( !**cfgcoderef ) {
+	if( **cfgcoderef==0 ) {
 		if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
 			harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: unexpected end of file with missing '}' for section. Line: %zu\n", _g_cfg_err.curr_line);
 		return false;
@@ -436,6 +418,8 @@ HARBOL_EXPORT struct HarbolLinkMap *harbol_cfg_parse_cstr(const char cfgcode[])
 	if( objs==NULL )
 		return NULL;
 	else {
+		_g_iota.global = 0;
+		_g_iota.local = &(intmax_t){0};
 		while( harbol_cfg_parse_key_val(objs, &iter) );
 		if( _g_cfg_err.count > 0 ) {
 			for( uindex_t i=0; i<_g_cfg_err.count; i++ ) {
