@@ -53,63 +53,6 @@ static NO_NULL bool skip_ws_and_comments(const char **strref)
 	}
 }
 
-/*
-static NEVER_NULL(1) bool _lex_string(const char **restrict strref, struct HarbolString *const restrict str)
-{
-	if( *strref==NULL || **strref==0 || str==NULL )
-		return false;
-	else if( !(**strref == '"' || **strref == '\'') ) {
-		if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
-			harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: invalid string quote mark: '%c'. Line: %zu\n", **strref, _g_cfg_err.curr_line);
-		return false;
-	}
-	const char quote = *(*strref)++;
-	while( **strref != 0 && **strref != quote ) {
-		const char chrval = *(*strref)++;
-		if( chrval=='\\' ) {
-			const char chr = *(*strref)++;
-			switch( chr ) {
-				case 'a': harbol_string_add_char(str, '\a'); break;
-				case 'r': harbol_string_add_char(str, '\r'); break;
-				case 'b': harbol_string_add_char(str, '\b'); break;
-				case 't': harbol_string_add_char(str, '\t'); break;
-				case 'v': harbol_string_add_char(str, '\v'); break;
-				case 'n': harbol_string_add_char(str, '\n'); break;
-				case 'f': harbol_string_add_char(str, '\f'); break;
-				case 's': harbol_string_add_char(str, ' '); break;
-				case 'x': {
-					const int32_t h = lex_hex_escape_char(*strref, strref);
-					if( h<0 ) {
-						if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
-							harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: bad hex escape character: '%c'. Line: %zu\n", **strref, _g_cfg_err.curr_line);
-						return false;
-					} else write_utf8_str(str, h);
-					break;
-				}
-				case 'u': case 'U': {
-					const int32_t h = lex_unicode_char(*strref, strref, chr=='u' ? sizeof(int16_t) : sizeof(int32_t));
-					if( h<0 ) {
-						if( _g_cfg_err.count < HARBOL_CFG_ERR_STK_SIZE )
-							harbol_string_format(&_g_cfg_err.errs[_g_cfg_err.count++], "Harbol Config Parser :: bad unicode character: '%c'. Line: %zu\n", **strref, _g_cfg_err.curr_line);
-						return false;
-					} else write_utf8_str(str, h);
-					break;
-				}
-				default: harbol_string_add_char(str, chr);
-			}
-		}
-		else harbol_string_add_char(str, chrval);
-	}
-	if( **strref==quote )
-		(*strref)++;
-	
-	// Patch, if an empty string was given, we allocate an empty string for the string.
-	if( str->cstr==NULL )
-		harbol_string_copy_cstr(str, "");
-	return **strref != 0;
-}
-*/
-
 static bool NO_NULL _lex_number(const char **restrict strref, struct HarbolString *const restrict str, enum HarbolCfgType *const typeref)
 {
 	if( *strref==NULL || **strref==0 )
@@ -199,7 +142,7 @@ static bool harbol_cfg_parse_key_val(struct HarbolLinkMap *const restrict map, c
 		struct HarbolVariant var = harbol_variant_create(&str, sizeof(struct HarbolString *), HarbolCfgType_String);
 		harbol_linkmap_insert(map, keystr.cstr, &var);
 	} else if( **cfgcoderef=='c' || **cfgcoderef=='v' ) {
-		// color/vector value!
+		// color or vector value!
 		const char valtype = *(*cfgcoderef)++;
 		skip_ws_and_comments(cfgcoderef);
 		
@@ -234,11 +177,24 @@ static bool harbol_cfg_parse_key_val(struct HarbolLinkMap *const restrict map, c
 				} else {
 					/// gotta use `sscanf` for possible hex floats.
 					float32_t f = 0;
+					const bool is_hex = !strncmp(numstr.cstr, "0x", 2) || !strncmp(numstr.cstr, "0X", 2);
 					switch( iterations ) {
-						case 0: sscanf(numstr.cstr, "%" SCNxf32 "", &f); matrix_value.vec4d.x = f; break;
-						case 1: sscanf(numstr.cstr, "%" SCNxf32 "", &f); matrix_value.vec4d.y = f; break;
-						case 2: sscanf(numstr.cstr, "%" SCNxf32 "", &f); matrix_value.vec4d.z = f; break;
-						case 3: sscanf(numstr.cstr, "%" SCNxf32 "", &f); matrix_value.vec4d.w = f; break;
+						case 0:
+							sscanf(numstr.cstr, is_hex ? "%" SCNxf32 "" : "%" SCNf32 "", &f);
+							matrix_value.vec4d.x = f;
+							break;
+						case 1:
+							sscanf(numstr.cstr, is_hex ? "%" SCNxf32 "" : "%" SCNf32 "", &f);
+							matrix_value.vec4d.y = f;
+							break;
+						case 2:
+							sscanf(numstr.cstr, is_hex ? "%" SCNxf32 "" : "%" SCNf32 "", &f);
+							matrix_value.vec4d.z = f;
+							break;
+						case 3:
+							sscanf(numstr.cstr, is_hex ? "%" SCNxf32 "" : "%" SCNf32 "", &f);
+							matrix_value.vec4d.w = f;
+							break;
 					}
 					iterations++;
 				}
