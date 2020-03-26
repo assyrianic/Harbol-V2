@@ -26,6 +26,10 @@ HARBOL_EXPORT NO_NULL NONNULL_RET const char *skip_single_line_comment(const cha
 HARBOL_EXPORT NO_NULL NONNULL_RET const char *skip_multi_line_comment(const char str[], const char end_token[], size_t end_len);
 HARBOL_EXPORT NO_NULL NONNULL_RET char *clear_single_line_comment(char str[]);
 HARBOL_EXPORT NO_NULL NONNULL_RET char *clear_multi_line_comment(char str[], const char end_token[], size_t end_len);
+HARBOL_EXPORT NO_NULL NONNULL_RET const char *skip_multiquote_string(const char str[], const char quote[], size_t quote_len, const char esc);
+
+HARBOL_EXPORT NO_NULL bool lex_single_line_comment(const char str[], const char **end, struct HarbolString *buf);
+HARBOL_EXPORT NO_NULL bool lex_multi_line_comment(const char str[], const char **end, const char end_token[], size_t end_len, struct HarbolString *buf);
 
 HARBOL_EXPORT NO_NULL size_t write_utf8_cstr(char buf[], size_t buflen, int32_t rune);
 HARBOL_EXPORT NO_NULL bool write_utf8_str(struct HarbolString *buf, int32_t rune);

@@ -175,24 +175,24 @@ static bool harbol_cfg_parse_key_val(struct HarbolLinkMap *const restrict map, c
 					}
 					iterations++;
 				} else {
-					/// gotta use `sscanf` for possible hex floats.
+					/// gotta use `harbol_string_scan` for possible hex floats.
 					float32_t f = 0;
 					const bool is_hex = !strncmp(numstr.cstr, "0x", 2) || !strncmp(numstr.cstr, "0X", 2);
 					switch( iterations ) {
 						case 0:
-							sscanf(numstr.cstr, is_hex ? "%" SCNxf32 "" : "%" SCNf32 "", &f);
+							harbol_string_scan(&numstr, is_hex ? "%" SCNxf32 "" : "%" SCNf32 "", &f);
 							matrix_value.vec4d.x = f;
 							break;
 						case 1:
-							sscanf(numstr.cstr, is_hex ? "%" SCNxf32 "" : "%" SCNf32 "", &f);
+							harbol_string_scan(&numstr, is_hex ? "%" SCNxf32 "" : "%" SCNf32 "", &f);
 							matrix_value.vec4d.y = f;
 							break;
 						case 2:
-							sscanf(numstr.cstr, is_hex ? "%" SCNxf32 "" : "%" SCNf32 "", &f);
+							harbol_string_scan(&numstr, is_hex ? "%" SCNxf32 "" : "%" SCNf32 "", &f);
 							matrix_value.vec4d.z = f;
 							break;
 						case 3:
-							sscanf(numstr.cstr, is_hex ? "%" SCNxf32 "" : "%" SCNf32 "", &f);
+							harbol_string_scan(&numstr, is_hex ? "%" SCNxf32 "" : "%" SCNf32 "", &f);
 							matrix_value.vec4d.w = f;
 							break;
 					}
@@ -238,7 +238,7 @@ static bool harbol_cfg_parse_key_val(struct HarbolLinkMap *const restrict map, c
 			return false;
 		}
 		*cfgcoderef += sizeof("false") - 1;
-		struct HarbolVariant *var = harbol_variant_new(&(bool){false}, sizeof(bool), HarbolCfgType_Bool);
+		struct HarbolVariant var = harbol_variant_create(&(bool){false}, sizeof(bool), HarbolCfgType_Bool);
 		res = harbol_linkmap_insert(map, keystr.cstr, &var);
 	} else if( **cfgcoderef=='n' ) {
 		// null value.
@@ -305,7 +305,7 @@ static bool harbol_cfg_parse_number(struct HarbolLinkMap *const restrict map, co
 		struct HarbolVariant var = { 0 };
 		if( type==HarbolCfgType_Float ) {
 			floatmax_t f = 0;
-			sscanf(numstr.cstr, "%" SCNxfMAX "", &f);
+			harbol_string_scan(&numstr, "%" SCNxfMAX "", &f);
 			var = harbol_variant_create(&f, sizeof(floatmax_t), type);
 		} else {
 			var = harbol_variant_create(&(intmax_t){strtoll(numstr.cstr, NULL, 0)}, sizeof(intmax_t), HarbolCfgType_Int);

@@ -1574,7 +1574,7 @@ void test_harbol_cfg(void)
 		    '6': Iota \
 		    '7': Iota \
 		} \
-		'test_iota__again': { \
+		'test_iota_again': { \
 		    '1': iota \
 		    '2': iota \
 		    '3': iota \
@@ -1996,6 +1996,7 @@ void test_harbol_lex(void)
 		"0553LUL", /// bad
 		"553", /// bad
 		"078", /// bad
+		".llu", /// bad
 	};
 	for( const char **i=&c_nums[0]; i<1[&c_nums]; i++ ) {
 		struct HarbolString lexeme = harbol_string_create(NULL);
@@ -2003,6 +2004,24 @@ void test_harbol_lex(void)
 		bool is_float = false;
 		const bool res = lex_c_style_number(*i, &end, &lexeme, &is_float);
 		fprintf(g_harbol_debug_stream, "result: %s :: lexeme: '%s' | is float? %s\n", res ? "yes" : "no", lexeme.cstr, is_float ? "yes" : "no");
+		harbol_string_clear(&lexeme);
+	}
+	
+	fputs("\nlex tools :: test single-line comment lexing.\n", g_harbol_debug_stream);
+	{
+		struct HarbolString lexeme = harbol_string_create(NULL);
+		const char *end = NULL;
+		const bool res = lex_single_line_comment("// kektus \\      \n foobar  \\ \n bazbard", &end, &lexeme);
+		fprintf(g_harbol_debug_stream, "result: %s :: comment: '%s'\n", res ? "yes" : "no", lexeme.cstr);
+		harbol_string_clear(&lexeme);
+	}
+	
+	fputs("\nlex tools :: test multi-line comment lexing.\n", g_harbol_debug_stream);
+	{
+		struct HarbolString lexeme = harbol_string_create(NULL);
+		const char *end = NULL;
+		const bool res = lex_multi_line_comment("/** kektus \n foobar  \n bazbard */", &end, "*/", sizeof "*/"-1, &lexeme);
+		fprintf(g_harbol_debug_stream, "result: %s :: comment: '%s'\n", res ? "yes" : "no", lexeme.cstr);
 		harbol_string_clear(&lexeme);
 	}
 }
