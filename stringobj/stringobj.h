@@ -53,6 +53,8 @@ HARBOL_EXPORT NEVER_NULL(1) bool harbol_string_copy_cstr(struct HarbolString *st
 
 HARBOL_EXPORT NEVER_NULL(1, 2) int32_t harbol_string_format(struct HarbolString *str, const char fmt[], ...);
 HARBOL_EXPORT NEVER_NULL(1, 2) int32_t harbol_string_add_format(struct HarbolString *str, const char fmt[], ...);
+HARBOL_EXPORT NEVER_NULL(1, 2) int32_t harbol_string_scan(struct HarbolString *str, const char fmt[], ...);
+
 HARBOL_EXPORT NEVER_NULL(1) int32_t harbol_string_cmpcstr(const struct HarbolString *str, const char cstr[]);
 HARBOL_EXPORT NO_NULL int32_t harbol_string_cmpstr(const struct HarbolString *strA, const struct HarbolString *strB);
 
