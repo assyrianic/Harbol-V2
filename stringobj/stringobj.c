@@ -161,7 +161,7 @@ HARBOL_EXPORT int32_t harbol_string_format(struct HarbolString *const restrict s
 {
 	va_list ap, st;
 	va_start(ap, fmt);
-	va_start(st, fmt);
+	va_copy(st, ap);
 	/*
 		'*snprintf' family returns the size of how large the writing
 		would be if the buffer was large enough.
@@ -182,35 +182,50 @@ HARBOL_EXPORT int32_t harbol_string_format(struct HarbolString *const restrict s
 	}
 }
 
-HARBOL_EXPORT int32_t harbol_string_add_format(struct HarbolString *const restrict string, const char fmt[restrict static 1], ...)
+HARBOL_EXPORT int32_t harbol_string_add_format(struct HarbolString *const restrict str, const char fmt[restrict static 1], ...)
 {
 	va_list ap, st;
 	va_start(ap, fmt);
-	va_start(st, fmt);
+	va_copy(st, ap);
+	
 	char c = 0;
 	const int32_t size = vsnprintf(&c, 1, fmt, ap);
 	va_end(ap);
 	
-	const size_t old_size = string->len;
-	const bool resize_res = __harbol_resize_string(string, size + old_size);
+	const size_t old_size = str->len;
+	const bool resize_res = __harbol_resize_string(str, size + old_size);
 	if( !resize_res ) {
 		va_end(st);
 		return -1;
 	} else {
-		const int32_t result = vsnprintf(&string->cstr[old_size], string->len-old_size+1, fmt, st);
+		const int32_t result = vsnprintf(&str->cstr[old_size], str->len-old_size+1, fmt, st);
 		va_end(st);
 		return result;
 	}
 }
 
+HARBOL_EXPORT int32_t harbol_string_scan(struct HarbolString *const restrict string, const char fmt[restrict static 1], ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	const int32_t result = vsscanf(string->cstr, fmt, args);
+	va_end(args);
+	return result;
+}
+
 HARBOL_EXPORT int32_t harbol_string_cmpcstr(const struct HarbolString *const restrict string, const char cstr[restrict])
 {
-	return( cstr==NULL || string->cstr==NULL ) ? -1 : strncmp(cstr, string->cstr, string->len);
+	if( cstr==NULL || string->cstr==NULL )
+		return -1;
+	else {
+		const size_t cstr_len = strlen(cstr);
+		return strncmp(cstr, string->cstr, (string->len > cstr_len) ? string->len : cstr_len);
+	}
 }
 
 HARBOL_EXPORT int32_t harbol_string_cmpstr(const struct HarbolString *const restrict stringA, const struct HarbolString *const restrict stringB)
 {
-	return( stringA->cstr==NULL || stringB->cstr==NULL ) ? -1 : strncmp(stringA->cstr, stringB->cstr, stringB->len);
+	return( stringA->cstr==NULL || stringB->cstr==NULL ) ? -1 : strncmp(stringA->cstr, stringB->cstr, stringA->len > stringB->len ? stringA->len : stringB->len);
 }
 
 HARBOL_EXPORT bool harbol_string_is_empty(const struct HarbolString *const string)
