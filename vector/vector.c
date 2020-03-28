@@ -137,6 +137,7 @@ HARBOL_EXPORT void harbol_vector_del(struct HarbolVector *const v, const uindex_
 		;
 		v->count--;
 		memmove(&v->table[j * v->datasize], &v->table[i * v->datasize], (v->count - j) * v->datasize);
+		memset(&v->table[v->count * v->datasize], 0, v->datasize);
 	}
 }
 
