@@ -159,7 +159,7 @@ HARBOL_EXPORT bool lex_multi_line_comment(const char str[static 1], const char *
 	if( *str != 0 )
 		str += end_len;
 	*end = str;
-	return buf->len > 0 && *str != 0;
+	return buf->len > 0;
 }
 
 
