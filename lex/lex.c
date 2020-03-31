@@ -84,7 +84,7 @@ HARBOL_EXPORT const char *skip_single_line_comment(const char str[static 1])
 
 HARBOL_EXPORT const char *skip_multi_line_comment(const char str[static 1], const char end_token[restrict static 1], const size_t end_len)
 {
-	const char *begin = str;
+	const char *begin = str + 1;
 	while( *begin != 0 && strncmp(end_token, begin, end_len) != 0 )
 		begin++;
 	
@@ -110,7 +110,7 @@ HARBOL_EXPORT char *clear_single_line_comment(char str[static 1])
 
 HARBOL_EXPORT char *clear_multi_line_comment(char str[static 1], const char end_token[restrict static 1], const size_t end_len)
 {
-	char *begin = str;
+	char *begin = str + 1;
 	while( *begin != 0 && strncmp(end_token, begin, end_len) != 0 ) {
 		if( *begin=='\n' ) {
 			memset(str, ' ', begin-str);
@@ -151,6 +151,7 @@ HARBOL_EXPORT bool lex_single_line_comment(const char str[static 1], const char 
 
 HARBOL_EXPORT bool lex_multi_line_comment(const char str[static 1], const char **const end, const char end_token[restrict static 1], const size_t end_len, struct HarbolString *const restrict buf)
 {
+	harbol_string_add_char(buf, *str++);
 	while( *str != 0 && strncmp(end_token, str, end_len) != 0 )
 		harbol_string_add_char(buf, *str++);
 	
