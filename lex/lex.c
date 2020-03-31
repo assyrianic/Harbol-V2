@@ -591,7 +591,7 @@ lex_go_style_hex_err:;
 }
 
 
-HARBOL_EXPORT bool lex_c_style_octal(const char str[static 1], const char **const end, struct HarbolString *const restrict buf)
+HARBOL_EXPORT bool lex_c_style_octal(const char str[static 1], const char **const end, struct HarbolString *const restrict buf, bool *const restrict is_float)
 {
 	bool result = false;
 	if( *str==0 )
@@ -608,9 +608,11 @@ HARBOL_EXPORT bool lex_c_style_octal(const char str[static 1], const char **cons
 		long1 = 1u << 1u,
 		long2 = 1u << 2u
 	;
-	while( *str != 0 && isalnum(*str) ) {
+	while( *str != 0 && (isalnum(*str) || *str=='.') ) {
 		const int32_t chr = *str;
 		switch( chr ) {
+			case '.':
+				return lex_c_style_decimal(str, end, buf, is_float);
 			case 'U': case 'u':
 				if( lit_flags & uflag ) { /// too many Us.
 					harbol_string_add_char(buf, chr);
@@ -1059,6 +1061,7 @@ HARBOL_EXPORT bool lex_c_style_number(const char str[static 1], const char **con
 			switch( str[1] ) {
 				case 'x': case 'X': return lex_c_style_hex(str, end, buf, is_float);
 				case 'b': case 'B': return lex_c_style_binary(str, end, buf);
+				case '.':           return lex_c_style_decimal(str, end, buf, is_float);
 				default:            return lex_c_style_octal(str, end, buf);
 			}
 		}

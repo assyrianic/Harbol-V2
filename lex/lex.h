@@ -42,7 +42,7 @@ HARBOL_EXPORT NO_NULL int32_t lex_unicode_char(const char str[], const char **en
 HARBOL_EXPORT NO_NULL bool lex_c_style_hex(const char str[], const char **end, struct HarbolString *buf, bool *is_float);
 HARBOL_EXPORT NO_NULL bool lex_go_style_hex(const char str[], const char **end, struct HarbolString *buf, bool *is_float);
 
-HARBOL_EXPORT NO_NULL bool lex_c_style_octal(const char str[], const char **end, struct HarbolString *buf);
+HARBOL_EXPORT NO_NULL bool lex_c_style_octal(const char str[], const char **end, struct HarbolString *buf, bool *is_float);
 HARBOL_EXPORT NO_NULL bool lex_go_style_octal(const char str[], const char **end, struct HarbolString *buf);
 
 HARBOL_EXPORT NO_NULL bool lex_c_style_binary(const char str[], const char **end, struct HarbolString *buf);
